@@ -1,0 +1,107 @@
+workflows:
+  flutter-workflow:
+    name: YourTurn Flutter Build
+    max_build_duration: 60
+    instance_type: mac_mini_m1
+    triggering:
+      events:
+        - push
+      branch_patterns:
+        - pattern: 'main'
+          include: true
+          source: true
+      cancel_previous_builds: true
+    environment:
+      # android_signing:
+        # Add your Android signing configuration here when ready
+        # - keystore_reference
+      # ios_signing:
+        # Add your iOS signing configuration here when ready
+        # distribution_type: app_store
+        # bundle_identifier: com.example.turn_notifier
+      vars:
+        # Define environment variables here
+        FLUTTER_VERSION: "3.35.4"
+        # FIREBASE_PROJECT_ID: "your-firebase-project-id"  # Uncomment when ready
+      flutter: stable
+      java: 21
+    scripts:
+      - name: Set up local.properties
+        script: |
+          echo "flutter.sdk=$HOME/programs/flutter" > "$CM_BUILD_DIR/android/local.properties"
+      - name: Get Flutter packages
+        script: |
+          flutter packages pub get
+      - name: Flutter analyze
+        script: |
+          flutter analyze
+      - name: Flutter test
+        script: |
+          flutter test
+      - name: Flutter build APK
+        script: |
+          flutter build apk --release
+      - name: Flutter build iOS (unsigned)
+        script: |
+          flutter build ios --release --no-codesign
+    artifacts:
+      - build/**/outputs/**/*.apk
+      - build/**/outputs/**/mapping.txt
+      - build/ios/iphoneos/*.app
+      - /tmp/xcodebuild_logs/*.log
+      - flutter_drive.log
+    # publishing:
+      # Uncomment and configure when ready to deploy to Firebase
+      # firebase:
+      #   firebase_project_id: $FIREBASE_PROJECT_ID
+      #   android:
+      #     artifact_type: 'apk'
+      #     track: internal
+      #   ios:
+      #     artifact_type: 'ios'
+      #     track: internal
+      
+      # email:
+      #   recipients:
+      #     - your-email@example.com  # Add your email address here
+      #   notify:
+      #     success: true
+      #     failure: true
+
+  flutter-dev-workflow:
+    name: YourTurn Flutter Dev Build (Manual)
+    max_build_duration: 45
+    instance_type: mac_mini_m1
+    triggering:
+      events: []  # Manual trigger only - no automatic builds
+    environment:
+      flutter: stable
+      java: 21
+      vars:
+        FLUTTER_VERSION: "3.35.4"
+    scripts:
+      - name: Set up local.properties
+        script: |
+          echo "flutter.sdk=$HOME/programs/flutter" > "$CM_BUILD_DIR/android/local.properties"
+      - name: Get Flutter packages
+        script: |
+          flutter packages pub get
+      - name: Flutter analyze
+        script: |
+          flutter analyze
+      - name: Flutter build APK (debug)
+        script: |
+          flutter build apk --debug
+      - name: Flutter build iOS (debug, unsigned)
+        script: |
+          flutter build ios --debug --no-codesign
+    artifacts:
+      - build/**/outputs/**/*.apk
+      - build/ios/iphoneos/*.app
+    # publishing:
+      # email:
+      #   recipients:
+      #     - your-email@example.com  # Add your email address here
+      #   notify:
+      #     success: true
+      #     failure: true
