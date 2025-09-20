@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'controllers/session_controller.dart';
-import 'models.dart';
 import 'widgets/player_tile.dart';
 
 void main() {
@@ -57,11 +56,13 @@ class _HomeScreenState extends State<HomeScreen> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text('Create a Session (Leader)', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+          const Text('Create a Session (Leader)',
+              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
           const SizedBox(height: 8),
           TextField(
             controller: _leaderName,
-            decoration: const InputDecoration(labelText: 'Your name (leader)', border: OutlineInputBorder()),
+            decoration: const InputDecoration(
+                labelText: 'Your name (leader)', border: OutlineInputBorder()),
           ),
           const SizedBox(height: 8),
           FilledButton.icon(
@@ -75,22 +76,28 @@ class _HomeScreenState extends State<HomeScreen> {
           const SizedBox(height: 32),
           const Divider(),
           const SizedBox(height: 16),
-          const Text('Join a Session', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+          const Text('Join a Session',
+              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
           const SizedBox(height: 8),
           TextField(
             controller: _joinName,
-            decoration: const InputDecoration(labelText: 'Your name', border: OutlineInputBorder()),
+            decoration: const InputDecoration(
+                labelText: 'Your name', border: OutlineInputBorder()),
           ),
           const SizedBox(height: 8),
           TextField(
             controller: _joinCode,
-            decoration: const InputDecoration(labelText: 'Session code (e.g., ABC-1)', border: OutlineInputBorder()),
+            decoration: const InputDecoration(
+                labelText: 'Session code (e.g., ABC-1)',
+                border: OutlineInputBorder()),
           ),
           const SizedBox(height: 8),
           FilledButton.icon(
             onPressed: () async {
-              if (_joinName.text.trim().isEmpty || _joinCode.text.trim().isEmpty) return;
-              await ctrl.joinSession(_joinCode.text.trim(), _joinName.text.trim());
+              if (_joinName.text.trim().isEmpty ||
+                  _joinCode.text.trim().isEmpty) return;
+              await ctrl.joinSession(
+                  _joinCode.text.trim(), _joinName.text.trim());
             },
             icon: const Icon(Icons.group_add),
             label: const Text('Join session'),
@@ -116,7 +123,9 @@ class _HomeScreenState extends State<HomeScreen> {
         Row(
           children: [
             Expanded(
-              child: Text('Session: ${s.code}', style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+              child: Text('Session: ${s.code}',
+                  style: const TextStyle(
+                      fontSize: 18, fontWeight: FontWeight.bold)),
             ),
             if (ctrl.isLeader)
               const Chip(label: Text('Leader'))
