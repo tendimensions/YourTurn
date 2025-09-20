@@ -1,7 +1,7 @@
 // P2PBridge.kt (place in android/app/src/main/kotlin/...)
 // Skeleton for a MethodChannel that you can wire to Nearby Connections or BLE later.
 
-// package com.example.turn_notifier
+// package com.tendimensions.yourturn
 //
 // import io.flutter.embedding.android.FlutterActivity
 // import io.flutter.embedding.engine.FlutterEngine

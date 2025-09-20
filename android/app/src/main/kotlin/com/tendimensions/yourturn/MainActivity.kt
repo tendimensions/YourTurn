@@ -1,4 +1,4 @@
-package com.example.turn_notifier
+package com.tendimensions.yourturn
 
 import io.flutter.embedding.android.FlutterActivity
 

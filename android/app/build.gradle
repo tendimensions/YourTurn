@@ -24,7 +24,7 @@ if (flutterVersionName == null) {
 }
 
 android {
-    namespace "com.example.turn_notifier"
+    namespace "com.tendimensions.yourturn"
     compileSdk 34
     ndkVersion "25.1.8937393"
 
@@ -38,7 +38,7 @@ android {
     }
 
     defaultConfig {
-        applicationId "com.example.turn_notifier"
+        applicationId "com.tendimensions.yourturn"
         minSdkVersion flutter.minSdkVersion
         targetSdk 34
         versionCode flutterVersionCode.toInteger()

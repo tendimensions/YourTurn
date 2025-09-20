@@ -194,7 +194,7 @@
       "languageVersion": "3.5"
     },
     {
-      "name": "turn_notifier",
+      "name": "yourturn",
       "rootUri": "../",
       "packageUri": "lib/",
       "languageVersion": "3.3"

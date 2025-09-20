@@ -1,4 +1,4 @@
-name: turn_notifier
+name: yourturn
 description: Local P2P turn-notifier skeleton for tabletop games (Flutter)
 publish_to: 'none'
 

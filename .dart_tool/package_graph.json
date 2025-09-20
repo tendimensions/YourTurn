@@ -1,10 +1,10 @@
 {
   "roots": [
-    "turn_notifier"
+    "yourturn"
   ],
   "packages": [
     {
-      "name": "turn_notifier",
+      "name": "yourturn",
       "version": "0.0.0",
       "dependencies": [
         "cupertino_icons",
