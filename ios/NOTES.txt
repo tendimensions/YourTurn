@@ -1,0 +1,5 @@
+iOS Info.plist additions (when you implement radios):
+
+- NSBluetoothAlwaysUsageDescription (String): "This app uses Bluetooth to discover and notify nearby players."
+- Optional Background Modes -> Uses Bluetooth LE accessories (for limited background scan/advert).
+- Optional NSLocalNetworkUsageDescription if you use peer-to-peer Wi-Fi.

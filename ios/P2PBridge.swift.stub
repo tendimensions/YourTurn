@@ -1,0 +1,29 @@
+// P2PBridge.swift (place in ios/Runner).
+// Skeleton for a MethodChannel that you can wire to MultipeerConnectivity later.
+
+// import UIKit
+// import Flutter
+// import MultipeerConnectivity
+//
+// @UIApplicationMain
+// @objc class AppDelegate: FlutterAppDelegate {
+//   override func application(
+//     _ application: UIApplication,
+//     didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey: Any]?
+//   ) -> Bool {
+//     let controller: FlutterViewController = window?.rootViewController as! FlutterViewController
+//     let channel = FlutterMethodChannel(name: "turnnotifier/p2p", binaryMessenger: controller.binaryMessenger)
+//
+//     let handler = P2PHandler() // implement with MCSession/Advertiser/Browser
+//     channel.setMethodCallHandler({ (call: FlutterMethodCall, result: @escaping FlutterResult) in
+//       switch call.method {
+//         case "createSession": /* handler.createSession(...) */
+//           result(nil)
+//         default:
+//           result(FlutterMethodNotImplemented)
+//       }
+//     })
+//
+//     return super.application(application, didFinishLaunchingWithOptions: launchOptions)
+//   }
+// }

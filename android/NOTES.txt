@@ -1,0 +1,11 @@
+Android manifest additions (when you implement radios):
+
+For Android 12+:
+    <uses-permission android:name="android.permission.BLUETOOTH_SCAN" />
+    <uses-permission android:name="android.permission.BLUETOOTH_ADVERTISE" />
+    <uses-permission android:name="android.permission.BLUETOOTH_CONNECT" />
+
+For Android 10–11:
+    <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
+
+Consider a foreground service if scanning during a session.
