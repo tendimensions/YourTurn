@@ -96,7 +96,6 @@ workflows:
           app_id: $FIREBASE_IOS_APP_ID
           groups:
             - testers
-          artifact_type: ipa
       
       email:
         recipients:
