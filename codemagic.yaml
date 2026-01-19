@@ -50,7 +50,11 @@ workflows:
           flutter packages pub get
       - name: Install CocoaPods dependencies
         script: |
-          cd ios && pod install
+          if [ -f "ios/Podfile" ]; then
+            cd ios && pod install
+          else
+            echo "No Podfile found, skipping CocoaPods installation"
+          fi
       - name: Flutter analyze
         script: |
           flutter analyze
@@ -138,7 +142,11 @@ workflows:
           flutter packages pub get
       - name: Install CocoaPods dependencies
         script: |
-          cd ios && pod install
+          if [ -f "ios/Podfile" ]; then
+            cd ios && pod install
+          else
+            echo "No Podfile found, skipping CocoaPods installation"
+          fi
       - name: Flutter analyze
         script: |
           flutter analyze
