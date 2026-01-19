@@ -90,12 +90,12 @@ workflows:
         android:
           app_id: $FIREBASE_ANDROID_APP_ID
           groups:
-            - testers
+            - private
           artifact_type: apk
         ios:
           app_id: $FIREBASE_IOS_APP_ID
           groups:
-            - testers
+            - private
       
       email:
         recipients:
