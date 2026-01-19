@@ -1,6 +1,5 @@
 import 'dart:async';
 import 'package:flutter/foundation.dart';
-import 'package:uuid/uuid.dart';
 
 import '../models.dart';
 import '../services/p2p_service.dart';
