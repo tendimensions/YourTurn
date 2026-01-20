@@ -42,9 +42,13 @@ workflows:
       - name: Flutter doctor
         script: |
           flutter doctor -v
-      - name: Set up local.properties
+      - name: Set up local.properties and AndroidX
         script: |
           echo "flutter.sdk=$HOME/programs/flutter" > "$CM_BUILD_DIR/android/local.properties"
+          cat >> "$CM_BUILD_DIR/android/gradle.properties" <<EOF
+          android.useAndroidX=true
+          android.enableJetifier=true
+          EOF
       - name: Get Flutter packages
         script: |
           flutter packages pub get
@@ -134,9 +138,13 @@ workflows:
       - name: Flutter doctor
         script: |
           flutter doctor -v
-      - name: Set up local.properties
+      - name: Set up local.properties and AndroidX
         script: |
           echo "flutter.sdk=$HOME/programs/flutter" > "$CM_BUILD_DIR/android/local.properties"
+          cat >> "$CM_BUILD_DIR/android/gradle.properties" <<EOF
+          android.useAndroidX=true
+          android.enableJetifier=true
+          EOF
       - name: Get Flutter packages
         script: |
           flutter packages pub get
