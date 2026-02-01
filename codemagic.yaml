@@ -12,170 +12,116 @@ workflows:
           source: true
       cancel_previous_builds: true
     environment:
-      # android_signing:
-        # Add your Android signing configuration here when ready
-        # - keystore_reference
-      # ios_signing:
-        # Add your iOS signing configuration here when ready
-        # distribution_type: app_store
-        # bundle_identifier: com.tendimensions.yourturn
-      vars:
-        # Environment variables (configure these in Codemagic dashboard under Environment variables):
-        # Create a group called 'firebase_credentials' with:
-        # - FIREBASE_SERVICE_ACCOUNT (JSON from Firebase Console → Project Settings → Service Accounts)
-        # - FIREBASE_ANDROID_APP_ID
-        # - FIREBASE_IOS_APP_ID
-        XCODE_WORKSPACE: "Runner.xcworkspace"
-        XCODE_SCHEME: "Runner"
-      groups:
-        - firebase_credentials
       flutter: 3.27.0
       xcode: latest
-      java: 21
       cocoapods: default
+      vars:
+        # ---- App identifiers ----
+        ANDROID_PACKAGE_NAME: com.tendimensions.yourturn
+        IOS_BUNDLE_ID: com.tendimensions.yourturn
+
+        # ---- Firebase App Distribution ----
+        FIREBASE_APP_ID_ANDROID: $FIREBASE_ANDROID_APP_ID
+        FIREBASE_APP_ID_IOS: $FIREBASE_IOS_APP_ID
+
+        # ---- iOS export method for ad-hoc device installs ----
+        EXPORT_METHOD: ad-hoc   # options: development | ad-hoc | enterprise | app-store
+
+      # Pull secret groups you'll define in Codemagic UI → Environment variables
+      groups:
+        # - android_signing
+        - ios_signing
+        - firebase_credentials
+      
+      java: 21
     cache:
       cache_paths:
-        - ~/.pub-cache
-        - $HOME/Library/Caches/CocoaPods
         - $FLUTTER_ROOT/.pub-cache
+        - ~/.pub-cache
+        - ios/Pods
+        - ~/.gradle/caches
+        - ~/.gradle/wrapper
+
     scripts:
-      - name: Flutter doctor
+      - name: Flutter pub get
+        script: flutter pub get
+
+      - name: Run unit tests
         script: |
-          flutter doctor -v
-      - name: Set up local.properties and AndroidX
+          echo "Running Flutter unit tests..."
+          flutter test --reporter compact
+          echo "✅ All tests passed!"
+        ignore_failure: true
+
+      - name: Set up Android keystore
         script: |
-          echo "flutter.sdk=$HOME/programs/flutter" > "$CM_BUILD_DIR/android/local.properties"
-          cat >> "$CM_BUILD_DIR/android/gradle.properties" <<EOF
-          android.useAndroidX=true
-          android.enableJetifier=true
+          # ANDROID_KEYSTORE_BASE64, ANDROID_KEYSTORE_PASSWORD, ANDROID_KEY_ALIAS, ANDROID_KEY_PASSWORD
+          echo "$ANDROID_KEYSTORE_BASE64" | base64 --decode > $CM_BUILD_DIR/android/app/keystore.jks
+
+          cat > $CM_BUILD_DIR/android/key.properties <<EOF
+          storePassword=$ANDROID_KEYSTORE_PASSWORD
+          keyPassword=$ANDROID_KEY_PASSWORD
+          keyAlias=$ANDROID_KEY_ALIAS
+          storeFile=keystore.jks
           EOF
-      - name: Get Flutter packages
+
+      - name: Build Android APK (release)
         script: |
-          flutter packages pub get
-      - name: Install CocoaPods dependencies
+          cd android
+          ./gradlew clean
+          cd ..
+          flutter build apk --release --build-number="$PROJECT_BUILD_NUMBER"
+
+      - name: Build iOS IPA (manual signing)
         script: |
-          if [ -f "ios/Podfile" ]; then
-            cd ios && pod install
-          else
-            echo "No Podfile found, skipping CocoaPods installation"
-          fi
-      - name: Flutter analyze
-        script: |
-          flutter analyze
-      - name: Flutter test
-        script: |
-          flutter test || echo "No tests found or tests failed, continuing build..."
-        ignore_failure: true
-      - name: Flutter build APK
-        script: |
-          flutter build apk --release
-      - name: Flutter build iOS (unsigned)
-        script: |
-          flutter build ios --release --no-codesign
-      - name: Build iOS IPA (Ad Hoc)
-        script: |
-          xcodebuild -workspace ios/Runner.xcworkspace \
-            -scheme Runner \
-            -configuration Release \
-            -archivePath $CM_BUILD_DIR/build/ios/Runner.xcarchive \
-            archive
-          xcodebuild -archivePath $CM_BUILD_DIR/build/ios/Runner.xcarchive \
-            -exportArchive \
-            -exportPath $CM_BUILD_DIR/build/ios/ipa \
-            -exportOptionsPlist ios/ExportOptions.plist
-        ignore_failure: true
+          # Set up keychain to be used for code signing using Codemagic CLI 'keychain' command
+          keychain initialize
+          
+          # Set up provisioning profiles from environment variables
+          PROFILES_HOME="$HOME/Library/MobileDevice/Provisioning Profiles"
+          mkdir -p "$PROFILES_HOME"
+          PROFILE_PATH="$(mktemp "$PROFILES_HOME"/$(uuidgen).mobileprovision)"
+          echo ${CM_PROVISIONING_PROFILE} | base64 --decode > "$PROFILE_PATH"
+          echo "Saved provisioning profile $PROFILE_PATH"
+          
+          # Set up signing certificate
+          echo $CM_CERTIFICATE | base64 --decode > /tmp/certificate.p12
+          keychain add-certificates --certificate /tmp/certificate.p12 --certificate-password $CM_CERTIFICATE_PASSWORD
+          
+          # Set up code signing settings on Xcode project
+          xcode-project use-profiles
+          
+          # Build iOS IPA using the export options generated by Codemagic
+          flutter build ipa \
+            --release \
+            --build-number="$PROJECT_BUILD_NUMBER" \
+            --export-options-plist=/Users/builder/export_options.plist
+          
+          # List generated files for debugging
+          echo "Generated files:"
+          find build -name "*.ipa" -o -name "*.xcarchive" | head -10
+
     artifacts:
-      - build/**/outputs/**/*.apk
-      - build/**/outputs/**/mapping.txt
+      - build/app/outputs/**/*.apk
       - build/ios/ipa/*.ipa
-      - build/ios/iphoneos/*.app
-      - /tmp/xcodebuild_logs/*.log
+      - build/ios/archive/*.xcarchive
+      - build/**/*.ipa
       - flutter_drive.log
+
     publishing:
       # Firebase App Distribution
       firebase:
         firebase_service_account: $FIREBASE_SERVICE_ACCOUNT
         android:
-          app_id: $FIREBASE_ANDROID_APP_ID
+          app_id: $FIREBASE_APP_ID_ANDROID
           groups:
-            - private
+            - testers
           artifact_type: apk
         ios:
-          app_id: $FIREBASE_IOS_APP_ID
+          app_id: $FIREBASE_APP_ID_IOS
           groups:
-            - private
+            - testers
       
-      email:
-        recipients:
-          - $NOTIFICATION_EMAIL
-        notify:
-          success: true
-          failure: true
-
-  flutter-dev-workflow:
-    name: YourTurn Flutter Dev Build (Manual)
-    max_build_duration: 45
-    instance_type: mac_mini_m1
-    triggering:
-      events: []  # Manual trigger only - no automatic builds
-    environment:
-      flutter: 3.27.0
-      xcode: latest
-      java: 21
-      cocoapods: default
-      vars:
-        # Environment variables configured in Codemagic dashboard
-        XCODE_WORKSPACE: "Runner.xcworkspace"
-        XCODE_SCHEME: "Runner"
-      groups:
-        - firebase_credentials
-    cache:
-      cache_paths:
-        - ~/.pub-cache
-        - $HOME/Library/Caches/CocoaPods
-        - $FLUTTER_ROOT/.pub-cache
-    scripts:
-      - name: Flutter doctor
-        script: |
-          flutter doctor -v
-      - name: Set up local.properties and AndroidX
-        script: |
-          echo "flutter.sdk=$HOME/programs/flutter" > "$CM_BUILD_DIR/android/local.properties"
-          cat >> "$CM_BUILD_DIR/android/gradle.properties" <<EOF
-          android.useAndroidX=true
-          android.enableJetifier=true
-          EOF
-      - name: Get Flutter packages
-        script: |
-          flutter packages pub get
-      - name: Install CocoaPods dependencies
-        script: |
-          if [ -f "ios/Podfile" ]; then
-            cd ios && pod install
-          else
-            echo "No Podfile found, skipping CocoaPods installation"
-          fi
-      - name: Flutter analyze
-        script: |
-          flutter analyze
-      - name: Flutter build APK (debug)
-        script: |
-          flutter build apk --debug
-      - name: Flutter build iOS (debug, unsigned)
-        script: |
-          flutter build ios --debug --no-codesign
-    artifacts:
-      - build/**/outputs/**/*.apk
-      - build/ios/iphoneos/*.app
-    publishing:
-      # Firebase App Distribution for dev builds
-      firebase:
-        firebase_service_account: $FIREBASE_SERVICE_ACCOUNT
-        android:
-          app_id: $FIREBASE_ANDROID_APP_ID
-          groups:
-            - dev-testers
-          artifact_type: apk
       email:
         recipients:
           - $NOTIFICATION_EMAIL
