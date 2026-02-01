@@ -75,6 +75,36 @@ workflows:
         script: |
           flutter build apk --release --build-number="$PROJECT_BUILD_NUMBER"
 
+      - name: Create release notes
+        script: |
+          echo "Build #$PROJECT_BUILD_NUMBER" > release_notes.txt
+          echo "Branch: $CM_BRANCH" >> release_notes.txt
+          echo "Commit: $(echo $CM_COMMIT | cut -c1-8)" >> release_notes.txt
+          echo "" >> release_notes.txt
+          
+          # Debug: Check if CHANGELOG.md exists and show its location
+          echo "Debug: Current directory: $(pwd)"
+          echo "Debug: CHANGELOG.md exists: $(test -f "CHANGELOG.md" && echo "YES" || echo "NO")"
+          if [ -f "CHANGELOG.md" ]; then
+            echo "Debug: First 10 lines of CHANGELOG.md:"
+            head -10 CHANGELOG.md
+            echo ""
+
+            echo "Latest Changes:" >> release_notes.txt
+            echo "" >> release_notes.txt
+            # Read from top until we hit "---" delimiter, skip first 2 lines (title and blank)
+            # More robust version that handles different line ending formats
+            sed '/^---$/q' CHANGELOG.md | sed '$d' | tail -n +3 >> release_notes.txt
+          else
+            echo "CHANGELOG.md not found, using default release notes" >> release_notes.txt
+            echo "• Initial release" >> release_notes.txt
+          fi
+          
+          echo "" >> release_notes.txt
+          echo "Built on: $(date)" >> release_notes.txt
+          echo "Created release notes file:"
+          cat release_notes.txt
+
       - name: Build iOS IPA (manual signing)
         script: |
           # Set up keychain to be used for code signing using Codemagic CLI 'keychain' command

@@ -1,6 +1,7 @@
 name: yourturn
 description: Local P2P turn-notifier skeleton for tabletop games (Flutter)
 publish_to: 'none'
+version: 0.0.1+1
 
 environment:
   sdk: '>=3.3.0 <4.0.0'
