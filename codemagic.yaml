@@ -55,6 +55,12 @@ workflows:
 
       - name: Set up Android keystore
         script: |
+          # Ensure AndroidX is enabled
+          cat >> "$CM_BUILD_DIR/android/gradle.properties" <<EOF
+          android.useAndroidX=true
+          android.enableJetifier=true
+          EOF
+          
           # ANDROID_KEYSTORE_BASE64, ANDROID_KEYSTORE_PASSWORD, ANDROID_KEY_ALIAS, ANDROID_KEY_PASSWORD
           echo "$ANDROID_KEYSTORE_BASE64" | base64 --decode > $CM_BUILD_DIR/android/app/keystore.jks
 
@@ -67,9 +73,6 @@ workflows:
 
       - name: Build Android APK (release)
         script: |
-          cd android
-          ./gradlew clean
-          cd ..
           flutter build apk --release --build-number="$PROJECT_BUILD_NUMBER"
 
       - name: Build iOS IPA (manual signing)
@@ -115,12 +118,12 @@ workflows:
         android:
           app_id: $FIREBASE_APP_ID_ANDROID
           groups:
-            - testers
+            - yourturn-testers
           artifact_type: apk
         ios:
           app_id: $FIREBASE_APP_ID_IOS
           groups:
-            - testers
+            - yourturn-testers
       
       email:
         recipients:
