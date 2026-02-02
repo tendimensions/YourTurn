@@ -2,6 +2,12 @@
 
 All notable changes to YourTurn will be documented in this file.
 
+## [0.0.3] - 2026-02-02
+
+- Added connectivity and joining sessions capability
+
+---
+
 ## [0.0.2] - 2026-02-01
 
 - Initial release with newer requirements
