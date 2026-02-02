@@ -20,9 +20,48 @@ This document captures the design decisions, technical approaches, and implement
 ### Non-Functional Requirements
 
 - **Setup Time**: < 30 seconds for all players to join
-- **Automatic Discovery**: No manual code entry or QR scanning
+- **Automatic Discovery**: No manual code entry or QR scanning (relaxed - see cross-platform section)
 - **Graceful Degradation**: Handle disconnections without game failure
 - **Session Isolation**: Prevent accidental cross-table joining
+
+---
+
+## ⚠️ Cross-Platform Interoperability Challenge
+
+### The Problem
+
+**iOS and Android use incompatible native P2P protocols that cannot communicate with each other:**
+
+| Platform | Native P2P Technology | Interoperates With |
+|----------|----------------------|-------------------|
+| iOS | MultipeerConnectivity | iOS only |
+| Android | Nearby Connections (Google Play Services) | Android only |
+
+This is a fundamental architectural limitation, not a bug. These are proprietary protocols designed by Apple and Google respectively, and they do not share a common transport layer for discovery or communication.
+
+### Current Implementation Status
+
+We have implemented platform-specific P2P services:
+
+- **iOS**: `P2PHandler.swift` using MultipeerConnectivity → Works iOS-to-iOS ✅
+- **Android**: `P2PHandler.kt` using Nearby Connections → Works Android-to-Android ✅
+- **Cross-platform**: iOS ↔ Android → **Does NOT work** ❌
+
+### Implications
+
+1. **Same-platform sessions work**: iOS users can connect with other iOS users, Android with Android
+2. **Mixed groups cannot use native P2P**: A gaming table with both iOS and Android devices needs an alternative solution
+3. **QR codes help with discovery but not communication**: Scanning a QR code shares the session code, but the underlying P2P protocols still can't talk to each other
+
+### QR Code Fallback (Implemented)
+
+We've implemented QR code scanning as a **discovery fallback**:
+
+- **Setup screen**: Displays QR code containing `yourturn:{sessionCode}`
+- **Lobby screen**: "Scan QR Code" button opens camera scanner
+- **Auto-join**: If player name is entered, scanning auto-joins the session
+
+**Important**: QR codes solve the *discovery* problem (how do I find the session?) but NOT the *communication* problem (how do devices talk to each other?). Cross-platform communication requires one of the solutions discussed in the Open Discussion section below.
 
 ## Architecture Decision: Service Abstraction
 
@@ -761,16 +800,20 @@ test('Message serialization round-trip', () {
 
 - [x] **Primary Technology**: BLE for Phase 1
 - [x] **Architecture**: Abstract service with swappable implementations
+- [x] **Platform-specific P2P**: MultipeerConnectivity (iOS) and Nearby Connections (Android) implemented
+- [x] **QR Code Fallback**: Implemented for discovery using `qr_flutter` and `mobile_scanner`
 - [ ] **BLE Package**: flutter_blue_plus vs flutter_reactive_ble vs custom
 - [ ] **Service UUID**: Define custom UUID for YourTurn GATT service
 - [ ] **Characteristic UUIDs**: Define for session info, notifications, messages
 - [ ] **Message Format**: JSON vs Protocol Buffers vs custom binary
 - [ ] **Connection Timeout**: How long to wait for connection establishment?
 - [ ] **Reconnection Policy**: How many retries? What intervals?
+- [ ] **Cross-Platform Solution**: See Open Discussion section below
 
 ### Design Decisions
 
-- [ ] **Session Discovery UI**: How to display multiple nearby sessions?
+- [x] **Session Discovery UI**: Nearby Sessions list with host name and status
+- [x] **QR Code Display**: Setup screen shows scannable QR code for session
 - [ ] **Connection Status**: How to show connection quality to users?
 - [ ] **Error Messages**: What to tell users when connections fail?
 - [ ] **Leader Indicator**: How to distinguish team leader in session list?
@@ -780,6 +823,149 @@ test('Message serialization round-trip', () {
 - [ ] **Device Requirements**: What iOS/Android versions to test?
 - [ ] **Test Scenarios**: What are the critical paths to validate?
 - [ ] **Performance Metrics**: What thresholds for success?
+
+---
+
+## 🔴 OPEN DISCUSSION: Cross-Platform Connectivity Decision
+
+### The Core Question
+
+**How should YourTurn handle mixed iOS + Android gaming groups?**
+
+The current platform-specific implementations (MultipeerConnectivity on iOS, Nearby Connections on Android) work excellently within their own ecosystems but cannot interoperate. We need to decide on a strategy for cross-platform connectivity.
+
+### Option 1: Bluetooth Low Energy (BLE) - Universal Protocol
+
+**Approach**: Implement BLE GATT server/client that works identically on both platforms.
+
+```
+iOS Device (GATT Server) ←→ Android Device (GATT Client)
+Android Device (GATT Server) ←→ iOS Device (GATT Client)
+```
+
+| Aspect | Details |
+| ------ | ------- |
+| **Pros** | True cross-platform, no server needed, no WiFi required, battery efficient |
+| **Cons** | Complex GATT implementation, 7-8 device limit, slower connection setup (5-10s), platform BLE stack differences |
+| **Complexity** | High - requires native code on both platforms |
+| **Dependencies** | `flutter_blue_plus` or custom platform channels |
+| **Internet Required** | No |
+
+**Implementation Notes**:
+- Team leader runs GATT server advertising session UUID
+- Players scan for GATT services and connect as clients
+- Use characteristics for: session info (read), turn notifications (notify), player messages (write)
+- Must handle iOS background BLE restrictions
+
+### Option 2: Local WiFi (TCP/IP Sockets)
+
+**Approach**: Use standard TCP/IP sockets when devices are on the same WiFi network.
+
+```
+Host Device (TCP Server on port XXXX)
+    ↑
+    └── All devices connect via local IP address
+```
+
+| Aspect | Details |
+| ------ | ------- |
+| **Pros** | Fast, reliable, high bandwidth, simple protocol, works cross-platform |
+| **Cons** | Requires same WiFi network, discovery requires mDNS/Bonjour or manual IP entry |
+| **Complexity** | Medium - standard socket programming |
+| **Dependencies** | None (Dart `dart:io` sockets) |
+| **Internet Required** | No (local network only) |
+
+**Implementation Notes**:
+- Host creates TCP server on ephemeral port
+- Use mDNS/Bonjour for service discovery (or QR code with IP:port)
+- JSON messages over TCP
+- Works great for home/cafe with shared WiFi
+- Fails in venues without WiFi or with client isolation
+
+### Option 3: WebSocket Server (Cloud-Based)
+
+**Approach**: All devices connect to a central WebSocket server that relays messages.
+
+```
+Cloud Server (WebSocket)
+    ↑
+    ├── iOS Device 1
+    ├── iOS Device 2
+    ├── Android Device 1
+    └── Android Device 2
+```
+
+| Aspect | Details |
+| ------ | ------- |
+| **Pros** | Simple client implementation, works anywhere with internet, no P2P complexity |
+| **Cons** | Requires internet, requires hosting/maintaining server, latency depends on connection |
+| **Complexity** | Low (client) / Medium (server) |
+| **Dependencies** | `web_socket_channel`, server infrastructure |
+| **Internet Required** | Yes |
+
+**Server Options**:
+- Self-hosted (Node.js, Go, etc.) - full control, hosting costs
+- Firebase Realtime Database - managed, easy setup, Google dependency
+- Supabase Realtime - managed, open source friendly
+- AWS API Gateway WebSocket - scalable, pay-per-use
+
+### Option 4: Hybrid Approach (Recommended for Discussion)
+
+**Approach**: Use the best technology available based on the situation.
+
+```
+Same Platform?
+├── Yes → Use native P2P (MultipeerConnectivity / Nearby Connections)
+└── No → Mixed group detected
+         └── Same WiFi?
+             ├── Yes → Use Local TCP/IP
+             └── No → Use BLE (or cloud fallback)
+```
+
+| Aspect | Details |
+| ------ | ------- |
+| **Pros** | Best experience for each scenario, graceful degradation |
+| **Cons** | Most complex to implement, more code paths to test |
+| **Complexity** | High |
+| **Dependencies** | Multiple |
+| **Internet Required** | Optional (for cloud fallback) |
+
+### Option 5: Accept Platform Limitation
+
+**Approach**: Document that cross-platform groups need all-iOS or all-Android. Rely on QR codes for easy session sharing within same platform.
+
+| Aspect | Details |
+| ------ | ------- |
+| **Pros** | No additional development, current implementation works well |
+| **Cons** | Poor UX for mixed groups, limits market appeal |
+| **Complexity** | None (already done) |
+| **Dependencies** | Current implementation |
+| **Internet Required** | No |
+
+### Decision Criteria
+
+Consider these factors when making the decision:
+
+1. **Target User Base**: How common are mixed iOS/Android gaming groups?
+2. **Development Resources**: How much time/effort can be allocated?
+3. **Deployment Constraints**: Can we require internet? Same WiFi?
+4. **Long-term Maintenance**: What's sustainable to maintain?
+5. **User Experience**: What's acceptable friction for setup?
+
+### Recommendation
+
+**For MVP**: Option 5 (Accept Limitation) with QR codes for easy same-platform joining.
+
+**For v1.1**: Option 2 (Local WiFi) as the first cross-platform solution - it's the simplest to implement and covers the common case of friends gaming at home or a cafe.
+
+**For v2.0**: Option 4 (Hybrid) with BLE as the universal fallback for venues without shared WiFi.
+
+### Action Items
+
+- [ ] **Decide**: Which option(s) to pursue and in what order
+- [ ] **User Research**: Survey target users about iOS/Android mix in their groups
+- [ ] **Prototype**: Build proof-of-concept for chosen approach
+- [ ] **Test**: Validate in real gaming scenarios
 
 ---
 
@@ -813,7 +999,7 @@ test('Message serialization round-trip', () {
 | Version | Date       | Author | Changes                          |
 |---------|------------|--------|----------------------------------|
 | 1.0     | 2026-02-01 | Team   | Initial design document          |
-| 1.1     | TBD        |        | Phase 1 implementation decisions |
+| 1.1     | 2026-02-02 | Team   | Added cross-platform interoperability section, QR code implementation details, open discussion for connectivity decision |
 | 2.0     | TBD        |        | Phase 2 platform enhancements    |
 
 ---

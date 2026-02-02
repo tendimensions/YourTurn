@@ -4,54 +4,110 @@
 
 YourTurn requires local peer-to-peer (P2P) networking to enable turn notifications between devices playing the same tabletop game. This is a **critical and complex** component that enables the core functionality of the app.
 
+## ⚠️ Critical: Cross-Platform Limitation
+
+**iOS and Android native P2P protocols DO NOT interoperate:**
+
+- **iOS**: Uses MultipeerConnectivity (Apple proprietary)
+- **Android**: Uses Nearby Connections (Google Play Services)
+
+These protocols cannot discover or communicate with each other. This means:
+
+- ✅ iOS-to-iOS works via MultipeerConnectivity
+- ✅ Android-to-Android works via Nearby Connections
+- ❌ iOS-to-Android does NOT work with native P2P
+
+**Current Workarounds:**
+
+1. QR codes for session discovery (implemented)
+2. Manual session code entry (implemented)
+
+**For true cross-platform communication, additional work is needed** - see the "Cross-Platform Options" section below.
+
+## Current Implementation Status
+
+### Platform-Specific Services
+
+| Platform | File | Technology | Status |
+|----------|------|------------|--------|
+| iOS | `ios/Runner/P2PHandler.swift` | MultipeerConnectivity | ✅ Implemented |
+| Android | `android/.../P2PHandler.kt` | Nearby Connections | ✅ Implemented |
+| Dart (iOS) | `lib/services/p2p_service_ios.dart` | Platform Channel | ✅ Implemented |
+| Dart (Android) | `lib/services/p2p_service_android.dart` | Platform Channel | ✅ Implemented |
+| Stub | `lib/services/p2p_service_stub.dart` | In-Memory | ✅ Implemented |
+
+### QR Code Support (Discovery Fallback)
+
+- **Generation**: `qr_flutter` package - displays `yourturn:{sessionCode}` on setup screen
+- **Scanning**: `mobile_scanner` package - scans and auto-joins sessions
+- **Note**: QR codes help with discovery but don't solve cross-platform communication
+
 ## P2P Architecture
 
 ### Network Topology
 
-```
+```text
 Device A (Host)
     │
     ├── Device B (Player)
     ├── Device C (Player)
     └── Device D (Player)
 
-Mesh Network:
-- 1 Host device creates the session
-- Multiple player devices join the session
-- All devices can send/receive turn notifications
-- Fallback to star topology if mesh is complex
+Star Topology:
+- 1 Host device creates and advertises the session
+- Player devices discover and connect to host
+- All messages flow through the host
+- Host broadcasts turn changes to all players
 ```
 
 ### Connection Types
 
-#### Primary: Bluetooth Low Energy (BLE)
+#### Current: Platform-Native P2P
 
-**Pros:**
+**iOS - MultipeerConnectivity:**
 
-- No WiFi required
-- Lower power consumption
-- Works in most environments
-- Good range (up to 100m clear line of sight)
+- Automatic transport selection (WiFi, Bluetooth, infrastructure)
+- Excellent reliability and range (30+ feet)
+- Apple's recommended approach
+- iOS-only
 
-**Cons:**
+**Android - Nearby Connections:**
 
-- Limited simultaneous connections (typically 7-8 devices)
-- Can be affected by interference
-- Platform-specific implementation differences
+- Automatic transport selection (BLE, WiFi Direct, WiFi LAN)
+- High bandwidth and reliability
+- Google's recommended approach
+- Requires Google Play Services
 
-#### Secondary: Local WiFi (WiFi Direct/Hotspot)
+#### Future: Cross-Platform Options
 
-**Pros:**
+**Option 1: Bluetooth Low Energy (BLE)**
 
-- Higher bandwidth
-- More stable connections
-- Better for larger groups (8+ players)
+- Universal standard supported on both platforms
+- True cross-platform without server
+- Complex GATT implementation required
+- 7-8 device connection limit
 
-**Cons:**
+**Option 2: Local WiFi (TCP/IP Sockets)**
 
-- Requires WiFi to be enabled
-- May interfere with internet connectivity
-- Platform differences (Android WiFi Direct vs iOS Multipeer)
+- Works when devices share same WiFi network
+- Simple implementation with Dart sockets
+- Requires mDNS for discovery or manual IP entry
+- Fails with client isolation or no WiFi
+
+**Option 3: Cloud Server (WebSocket)**
+
+- Works anywhere with internet
+- Simple client implementation
+- Requires hosting and internet connectivity
+- Adds latency
+
+### Recommended Approach for Cross-Platform
+
+For mixed iOS/Android groups, implement in this order:
+
+1. **Phase 1 (Current)**: Same-platform native P2P + QR code discovery
+2. **Phase 2**: Local WiFi TCP/IP for same-network groups
+3. **Phase 3**: BLE for offline cross-platform support
 
 ## Service Architecture
 
@@ -98,15 +154,16 @@ abstract class P2PService {
 
 ### Platform Implementations
 
-#### Android (BLE + WiFi Direct)
+#### Android (Nearby Connections)
 
-**Location**: `lib/services/p2p_service_android.dart`
+**Dart Location**: `lib/services/p2p_service_android.dart`
+**Native Location**: `android/app/src/main/kotlin/.../P2PHandler.kt`
 
 **Key Technologies**:
 
-- Bluetooth Low Energy (BLE) APIs
-- WiFi Direct APIs
-- Service Discovery (mDNS/Bonjour)
+- Google Nearby Connections API (P2P_STAR strategy)
+- MethodChannel for Flutter communication
+- EventChannel for streaming events
 
 **Permissions Required**:
 
@@ -122,25 +179,29 @@ abstract class P2PService {
 <uses-permission android:name="android.permission.ACCESS_WIFI_STATE" />
 <uses-permission android:name="android.permission.CHANGE_WIFI_STATE" />
 <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
+<uses-permission android:name="android.permission.NEARBY_WIFI_DEVICES" />
 ```
 
 **Implementation Notes**:
 
-- Use BLE GATT server/client pattern
-- Implement service UUID for app identification
-- Handle runtime permission requests
-- Implement connection state callbacks
-- Handle device bonding if required
+- Uses `P2P_STAR` strategy for advertising and discovery
+- Session creator advertises with session code in endpoint info
+- Players discover and request connection to advertised sessions
+- JSON messages broadcast to all connected endpoints
+- Handles connection lifecycle callbacks
 
-#### iOS (BLE + Multipeer Connectivity)
+#### iOS (MultipeerConnectivity)
 
-**Location**: `lib/services/p2p_service_ios.swift`
+**Dart Location**: `lib/services/p2p_service_ios.dart`
+**Native Location**: `ios/Runner/P2PHandler.swift`
 
 **Key Technologies**:
 
-- Core Bluetooth framework
-- Multipeer Connectivity framework
-- Bonjour/mDNS
+- MultipeerConnectivity framework
+- MCNearbyServiceAdvertiser for session hosting
+- MCNearbyServiceBrowser for session discovery
+- MCSession for data transmission
+- FlutterMethodChannel for communication
 
 **Permissions Required**:
 
@@ -148,44 +209,53 @@ abstract class P2PService {
 <!-- Info.plist -->
 <key>NSBluetoothAlwaysUsageDescription</key>
 <string>YourTurn needs Bluetooth to connect with nearby players</string>
-<key>NSBluetoothPeripheralUsageDescription</key>
-<string>YourTurn needs Bluetooth to connect with nearby players</string>
 <key>NSLocalNetworkUsageDescription</key>
 <string>YourTurn needs local network access to discover nearby game sessions</string>
+<key>NSBonjourServices</key>
+<array>
+  <string>_yourturn._tcp</string>
+</array>
 ```
 
 **Implementation Notes**:
 
-- Use CBCentralManager for BLE central role
-- Use CBPeripheralManager for BLE peripheral role
-- MCNearbyServiceAdvertiser for session hosting
-- MCNearbyServiceBrowser for session discovery
-- MCSession for data transmission
+- Service type: `yourturn` (advertised via Bonjour)
+- Session info embedded in discovery info dictionary
+- Automatic invitation handling for joining players
+- JSON messages sent via MCSession data transmission
+- Handles peer state changes and disconnections
 
-#### Stub Implementation
+#### Stub Implementation (In-Memory)
 
 **Location**: `lib/services/p2p_service_stub.dart`
 
-**Purpose**: Development and testing without platform dependencies
+**Purpose**: Development and testing without physical devices
 
 ```dart
-class P2PServiceStub implements P2PService {
-  @override
-  Future<bool> initialize() async {
-    print('[Stub] P2P initialized');
-    return true;
+class InMemoryP2PService implements P2PService {
+  // Singleton pattern for in-memory session sharing
+  static final _sessions = <String, Session>{};
+
+  // Used on non-mobile platforms (web, desktop, simulator)
+  // Allows testing the full app flow without native P2P
+}
+```
+
+#### Service Factory
+
+**Location**: `lib/services/p2p_service_factory.dart`
+
+```dart
+class P2PServiceFactory {
+  static P2PService create() {
+    if (Platform.isIOS) {
+      return IosP2PService();      // MultipeerConnectivity
+    } else if (Platform.isAndroid) {
+      return AndroidP2PService();  // Nearby Connections
+    } else {
+      return InMemoryP2PService(); // Stub for testing
+    }
   }
-  
-  @override
-  Stream<Device> startDiscovery() {
-    // Return mock devices for testing
-    return Stream.fromIterable([
-      Device(id: 'stub-1', name: 'Test Device 1'),
-      Device(id: 'stub-2', name: 'Test Device 2'),
-    ]);
-  }
-  
-  // ... other stub implementations
 }
 ```
 
@@ -595,10 +665,65 @@ class P2PDebugPanel extends StatelessWidget {
 }
 ```
 
+## Cross-Platform Connectivity Options
+
+When implementing cross-platform support (iOS + Android in same session), consider these approaches:
+
+### Option 1: Bluetooth Low Energy (BLE)
+
+```dart
+// Conceptual approach
+class P2PServiceBLE implements P2PService {
+  // Team leader runs GATT server
+  // Players connect as GATT clients
+  // Works cross-platform but complex to implement
+}
+```
+
+Pros: No WiFi needed, true offline P2P
+Cons: Complex GATT implementation, 7-8 device limit, platform quirks
+
+### Option 2: Local WiFi TCP/IP
+
+```dart
+// Conceptual approach
+class P2PServiceTCP implements P2PService {
+  // Host creates TCP server on local IP
+  // Players connect via IP:port (from QR code or mDNS)
+  // Simple socket-based communication
+}
+```
+
+Pros: Simple, fast, reliable
+Cons: Requires same WiFi network, fails with client isolation
+
+### Option 3: WebSocket Server
+
+```dart
+// Conceptual approach
+class P2PServiceCloud implements P2PService {
+  // All devices connect to central WebSocket server
+  // Server relays messages between session members
+  // Works anywhere with internet
+}
+```
+
+Pros: Works anywhere, simple client code
+Cons: Requires internet, server hosting/costs
+
+### Recommended Implementation Order
+
+1. **Now**: Platform-native P2P (implemented) + QR codes for discovery
+2. **Next**: Local WiFi TCP/IP for same-network cross-platform
+3. **Future**: BLE for offline cross-platform scenarios
+
+See `docs/connectivity-design.md` for detailed analysis and decision criteria.
+
 ## Resources
 
+- [Android Nearby Connections](https://developers.google.com/nearby/connections/overview)
+- [iOS MultipeerConnectivity](https://developer.apple.com/documentation/multipeerconnectivity)
 - [Android BLE Guide](https://developer.android.com/guide/topics/connectivity/bluetooth-le)
 - [iOS Core Bluetooth](https://developer.apple.com/documentation/corebluetooth)
-- [iOS Multipeer Connectivity](https://developer.apple.com/documentation/multipeerconnectivity)
 - [Flutter Platform Channels](https://docs.flutter.dev/development/platform-integration/platform-channels)
 - [BLE GATT Services](https://www.bluetooth.com/specifications/gatt/services/)

@@ -32,6 +32,11 @@ class P2PHandler: NSObject {
     // Track connected players
     private var connectedPlayers: [MCPeerID: [String: Any]] = [:]
 
+    // Pending join state
+    private var pendingJoinCompletion: ((Result<[String: Any], Error>) -> Void)?
+    private var pendingJoinHostPeer: MCPeerID?
+    private var joinTimeoutTimer: Timer?
+
     // MARK: - Initialization
     override init() {
         super.init()
@@ -68,6 +73,8 @@ class P2PHandler: NSObject {
         advertiser?.delegate = self
         advertiser?.startAdvertisingPeer()
 
+        print("[P2P] Created session: \(sessionCode) as \(leaderName)")
+
         return [
             "sessionId": sessionId,
             "sessionCode": sessionCode,
@@ -78,37 +85,52 @@ class P2PHandler: NSObject {
 
     /// Start browsing for nearby sessions
     func startDiscovery() {
+        // Create a temporary peer ID for browsing if we don't have one
         if peerID == nil {
-            peerID = MCPeerID(displayName: UUID().uuidString.prefix(8).description)
+            peerID = MCPeerID(displayName: "Browser-\(UUID().uuidString.prefix(4))")
         }
 
         browser?.stopBrowsingForPeers()
         browser = MCNearbyServiceBrowser(peer: peerID, serviceType: P2PHandler.serviceType)
         browser?.delegate = self
         browser?.startBrowsingForPeers()
+
+        print("[P2P] Started discovery")
     }
 
     /// Stop browsing for sessions
     func stopDiscovery() {
         browser?.stopBrowsingForPeers()
-        browser = nil
+        // Don't nil the browser yet - we might need it for joining
+        print("[P2P] Stopped discovery")
     }
 
     /// Join an existing session
     func joinSession(sessionCode: String, playerName: String, completion: @escaping (Result<[String: Any], Error>) -> Void) {
+        print("[P2P] Attempting to join session: \(sessionCode) as \(playerName)")
+
         // Find the peer with matching session code
         guard let (hostPeer, info) = discoveredPeers.first(where: { $0.value["sessionCode"] == sessionCode }) else {
-            completion(.failure(NSError(domain: "P2P", code: 404, userInfo: [NSLocalizedDescriptionKey: "Session not found"])))
+            print("[P2P] Session not found in discovered peers. Available: \(discoveredPeers.values.map { $0["sessionCode"] ?? "?" })")
+            completion(.failure(NSError(domain: "P2P", code: 404, userInfo: [NSLocalizedDescriptionKey: "Session not found. Try scanning again."])))
             return
         }
 
-        cleanup()
+        // Store info before cleanup
+        let sessionId = info["sessionId"] ?? ""
 
+        // Stop advertising/browsing but keep discovered peers
+        advertiser?.stopAdvertisingPeer()
+        advertiser = nil
+        session?.disconnect()
+        session = nil
+
+        // Create new peer identity for joining
         peerID = MCPeerID(displayName: playerName)
         session = MCSession(peer: peerID, securityIdentity: nil, encryptionPreference: .required)
         session?.delegate = self
 
-        currentSessionId = info["sessionId"]
+        currentSessionId = sessionId
         currentSessionCode = sessionCode
         isHost = false
 
@@ -116,19 +138,34 @@ class P2PHandler: NSObject {
         pendingJoinCompletion = completion
         pendingJoinHostPeer = hostPeer
 
-        // Create browser to invite ourselves
+        // Set up timeout
+        joinTimeoutTimer?.invalidate()
+        joinTimeoutTimer = Timer.scheduledTimer(withTimeInterval: 30.0, repeats: false) { [weak self] _ in
+            self?.handleJoinTimeout()
+        }
+
+        // Re-create browser with new peer ID and invite the host
+        browser?.stopBrowsingForPeers()
         browser = MCNearbyServiceBrowser(peer: peerID, serviceType: P2PHandler.serviceType)
         browser?.delegate = self
         browser?.startBrowsingForPeers()
 
-        // Invite the host
-        if let session = session {
-            browser?.invitePeer(hostPeer, to: session, withContext: playerName.data(using: .utf8), timeout: 30)
+        // Small delay to let browser initialize, then invite
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) { [weak self] in
+            guard let self = self, let session = self.session else { return }
+            print("[P2P] Sending invitation to host: \(hostPeer.displayName)")
+            self.browser?.invitePeer(hostPeer, to: session, withContext: playerName.data(using: .utf8), timeout: 30)
         }
     }
 
-    private var pendingJoinCompletion: ((Result<[String: Any], Error>) -> Void)?
-    private var pendingJoinHostPeer: MCPeerID?
+    private func handleJoinTimeout() {
+        if let completion = pendingJoinCompletion {
+            print("[P2P] Join timed out")
+            pendingJoinCompletion = nil
+            pendingJoinHostPeer = nil
+            completion(.failure(NSError(domain: "P2P", code: 408, userInfo: [NSLocalizedDescriptionKey: "Connection timed out. Please try again."])))
+        }
+    }
 
     /// Start the game (update advertising info)
     func startGame() {
@@ -222,6 +259,11 @@ class P2PHandler: NSObject {
 
     /// Clean up all resources
     func cleanup() {
+        joinTimeoutTimer?.invalidate()
+        joinTimeoutTimer = nil
+        pendingJoinCompletion = nil
+        pendingJoinHostPeer = nil
+
         advertiser?.stopAdvertisingPeer()
         advertiser = nil
         browser?.stopBrowsingForPeers()
@@ -232,6 +274,8 @@ class P2PHandler: NSObject {
         currentSessionCode = nil
         isHost = false
         connectedPlayers.removeAll()
+        discoveredPeers.removeAll()
+        peerID = nil
     }
 
     // MARK: - Private Methods
@@ -274,9 +318,12 @@ extension P2PHandler: MCSessionDelegate {
             case .connected:
                 print("[P2P] Peer connected: \(peerID.displayName)")
 
+                // Cancel timeout timer
+                self.joinTimeoutTimer?.invalidate()
+                self.joinTimeoutTimer = nil
+
                 // If we're joining and this is the host
-                if let completion = self.pendingJoinCompletion,
-                   peerID == self.pendingJoinHostPeer {
+                if let completion = self.pendingJoinCompletion {
                     self.pendingJoinCompletion = nil
                     self.pendingJoinHostPeer = nil
 
@@ -300,6 +347,15 @@ extension P2PHandler: MCSessionDelegate {
                 print("[P2P] Peer disconnected: \(peerID.displayName)")
                 self.connectedPlayers.removeValue(forKey: peerID)
                 self.onPeerDisconnected?(peerID.displayName)
+
+                // If we were trying to join and got disconnected
+                if let completion = self.pendingJoinCompletion {
+                    self.pendingJoinCompletion = nil
+                    self.pendingJoinHostPeer = nil
+                    self.joinTimeoutTimer?.invalidate()
+                    self.joinTimeoutTimer = nil
+                    completion(.failure(NSError(domain: "P2P", code: 500, userInfo: [NSLocalizedDescriptionKey: "Connection failed. Please try again."])))
+                }
 
             case .connecting:
                 print("[P2P] Connecting to peer: \(peerID.displayName)")
@@ -358,6 +414,7 @@ extension P2PHandler: MCNearbyServiceAdvertiserDelegate {
     }
 
     func advertiser(_ advertiser: MCNearbyServiceAdvertiser, didNotStartAdvertisingPeer error: Error) {
+        print("[P2P] Failed to start advertising: \(error.localizedDescription)")
         onError?("Failed to start advertising: \(error.localizedDescription)")
     }
 }
@@ -387,6 +444,7 @@ extension P2PHandler: MCNearbyServiceBrowserDelegate {
     }
 
     func browser(_ browser: MCNearbyServiceBrowser, didNotStartBrowsingForPeers error: Error) {
+        print("[P2P] Failed to start browsing: \(error.localizedDescription)")
         onError?("Failed to start browsing: \(error.localizedDescription)")
     }
 }

@@ -1,10 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:qr_flutter/qr_flutter.dart';
 import '../controllers/session_controller.dart';
 import '../models.dart';
 import '../theme/app_theme.dart';
-import '../widgets/player_list.dart';
 import '../widgets/leader_menu.dart';
+import '../widgets/player_list.dart';
 
 /// Setup screen shown before game starts.
 /// Leader can configure timer, reorder players, and start the game.
@@ -92,6 +93,9 @@ class SetupScreen extends StatelessWidget {
   }
 
   Widget _buildSessionInfo(SessionController controller) {
+    final sessionCode = controller.session?.code ?? '';
+    final qrData = 'yourturn:$sessionCode';
+
     return Card(
       child: Padding(
         padding: const EdgeInsets.all(16),
@@ -103,8 +107,28 @@ class SetupScreen extends StatelessWidget {
             ),
             const SizedBox(height: 8),
             Text(
-              controller.session?.code ?? '',
+              sessionCode,
               style: AppTheme.sessionCode,
+            ),
+            const SizedBox(height: 16),
+            if (sessionCode.isNotEmpty)
+              Container(
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: QrImageView(
+                  data: qrData,
+                  version: QrVersions.auto,
+                  size: 150,
+                  backgroundColor: Colors.white,
+                ),
+              ),
+            const SizedBox(height: 12),
+            const Text(
+              'Scan to join',
+              style: TextStyle(color: Colors.black54, fontSize: 12),
             ),
             const SizedBox(height: 8),
             Text(

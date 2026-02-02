@@ -9,7 +9,9 @@
       "dependencies": [
         "cupertino_icons",
         "flutter",
+        "mobile_scanner",
         "provider",
+        "qr_flutter",
         "uuid",
         "wakelock_plus"
       ],
@@ -39,6 +41,14 @@
         "stream_channel",
         "test_api",
         "vector_math"
+      ]
+    },
+    {
+      "name": "qr_flutter",
+      "version": "4.1.0",
+      "dependencies": [
+        "flutter",
+        "qr"
       ]
     },
     {
@@ -400,6 +410,23 @@
       "dependencies": [
         "collection",
         "meta"
+      ]
+    },
+    {
+      "name": "qr",
+      "version": "3.0.2",
+      "dependencies": [
+        "meta"
+      ]
+    },
+    {
+      "name": "mobile_scanner",
+      "version": "5.2.3",
+      "dependencies": [
+        "flutter",
+        "flutter_web_plugins",
+        "plugin_platform_interface",
+        "web"
       ]
     }
   ],

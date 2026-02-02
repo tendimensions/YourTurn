@@ -5,6 +5,7 @@ import 'package:provider/provider.dart';
 import '../controllers/session_controller.dart';
 import '../services/p2p_service.dart';
 import '../theme/app_theme.dart';
+import 'qr_scanner_screen.dart';
 
 /// Lobby screen for creating or joining sessions.
 /// Shows session discovery and join options.
@@ -321,7 +322,7 @@ class _LobbyScreenState extends State<LobbyScreen> {
             const SizedBox(height: 8),
             Text(
               _isNativePlatform
-                  ? 'Or enter the session code manually.'
+                  ? 'Scan the QR code or enter the session code manually.'
                   : 'Enter the session code to join an existing game.',
               style: const TextStyle(color: Colors.black54),
             ),
@@ -338,13 +339,36 @@ class _LobbyScreenState extends State<LobbyScreen> {
               enabled: !_isJoining,
             ),
             const SizedBox(height: 12),
+            // QR Code scan button (only on mobile)
+            if (_isNativePlatform) ...[
+              OutlinedButton.icon(
+                onPressed: _isJoining ? null : _scanQRCode,
+                icon: const Icon(Icons.qr_code_scanner),
+                label: const Text('Scan QR Code'),
+                style: OutlinedButton.styleFrom(
+                  padding: const EdgeInsets.symmetric(vertical: 16),
+                ),
+              ),
+              const SizedBox(height: 12),
+              const Row(
+                children: [
+                  Expanded(child: Divider()),
+                  Padding(
+                    padding: EdgeInsets.symmetric(horizontal: 16),
+                    child: Text('OR', style: TextStyle(color: Colors.black54)),
+                  ),
+                  Expanded(child: Divider()),
+                ],
+              ),
+              const SizedBox(height: 12),
+            ],
             TextField(
               controller: _sessionCodeController,
               decoration: const InputDecoration(
                 labelText: 'Session Code',
                 hintText: 'e.g., ABC-1',
                 border: OutlineInputBorder(),
-                prefixIcon: Icon(Icons.qr_code),
+                prefixIcon: Icon(Icons.tag),
               ),
               textCapitalization: TextCapitalization.characters,
               enabled: !_isJoining,
@@ -365,6 +389,21 @@ class _LobbyScreenState extends State<LobbyScreen> {
         ),
       ),
     );
+  }
+
+  Future<void> _scanQRCode() async {
+    final code = await Navigator.push<String>(
+      context,
+      MaterialPageRoute(builder: (context) => const QRScannerScreen()),
+    );
+
+    if (code != null && code.isNotEmpty && mounted) {
+      _sessionCodeController.text = code;
+      // Auto-join if we have a name
+      if (_playerNameController.text.trim().isNotEmpty) {
+        _joinSession(context);
+      }
+    }
   }
 
   Widget _buildInfoNote() {
