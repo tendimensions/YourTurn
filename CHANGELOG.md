@@ -2,6 +2,13 @@
 
 All notable changes to YourTurn will be documented in this file.
 
+## [0.0.2] - 2026-02-01
+
+- Initial release with newer requirements
+- No connectivity features yet
+
+---
+
 ## [0.0.1] - 2026-02-01
 
 - Initial release
@@ -34,7 +41,7 @@ Use these categories:
 
 Example:
 
-```
+```text
 ## [1.1.0] - 2026-02-15
 
 ### Added

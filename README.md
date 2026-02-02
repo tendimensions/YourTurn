@@ -1,101 +1,184 @@
-# Turn Notifier — Flutter Skeleton
+# YourTurn
 
-A minimal Flutter project skeleton for a **local, peer-to-peer turn notifier** (tabletop game helper).
-This zip contains the **app structure** and a **stubbed P2P service** with clear seams to add native code:
+A local peer-to-peer turn notification system for tabletop games, built with Flutter for cross-platform support (Android & iOS).
 
-- iOS: MultipeerConnectivity
-- Android: Nearby Connections or BLE
+**YourTurn** eliminates the need for players to constantly check whose turn it is during board games. Players connect their devices via local networking, and the app automatically notifies the next player when it's their turn with visual indicators and optional timers.
 
-> This is a *starter skeleton*, not a production-ready P2P implementation. It compiles once you place it inside a Flutter project.
+## Features
 
-## Quick start (recommended flow)
+- **Local P2P Connectivity**: No internet required - uses Bluetooth and local networking
+- **Cross-Platform**: Works seamlessly between iOS and Android devices
+- **Turn Tracking**: Visual indicators (green/red screens) show whose turn it is
+- **Player Management**: Support for 2-8 players with customizable turn order
+- **Optional Timer**: Countdown timer with haptic feedback when time expires
+- **Time Tracking**: See total time each player spent on their turns
+- **Team Leader Controls**: Menu for managing game settings mid-game
 
-1. Ensure you have the Flutter SDK installed.
-2. Create a fresh Flutter project (this gives you all platform scaffolding):
+## Getting Started
+
+### Prerequisites
+
+- Flutter SDK 3.27.0 or higher
+- iOS 12.0+ / Android 6.0+ (API level 23)
+- Physical devices for testing (P2P requires real hardware)
+
+### Installation
+
+1. Clone the repository:
    ```bash
-   flutter create turn_notifier
+   git clone https://github.com/tendimensions/YourTurn.git
+   cd YourTurn
    ```
-3. Copy the contents of this skeleton **over** the newly created project:
-   - Overwrite `pubspec.yaml` and the `lib/` folder from this zip.
-   - Optionally review the `android/` and `ios/` notes below for permissions.
-4. Install dependencies:
+
+2. Install dependencies:
    ```bash
-   cd turn_notifier
    flutter pub get
    ```
-5. Run:
+
+3. Run on physical device:
    ```bash
    flutter run
    ```
 
-You’ll get a working **local simulator** (single-device) for sessions, players, and turn passing. 
-The `P2PService` interface is ready for a native-backed implementation when you’re ready.
+**Note**: The app currently uses a stub P2P implementation for development. Real P2P connectivity implementation is in progress (see [Connectivity Design](docs/connectivity-design.md)).
 
----
+## Architecture
 
-## Where to add real P2P
-
-- **`lib/services/p2p_service.dart`** — Interface & platform switch.
-- **`lib/services/p2p_service_stub.dart`** — In-memory simulator (keeps UI functional).
-- Add a platform channel to call into:
-  - iOS: `MultipeerConnectivity` (Swift; e.g., `MCNearbyServiceAdvertiser`, `MCNearbyServiceBrowser`, `MCSession`).
-  - Android: Nearby Connections (`com.google.android.gms.nearby.Nearby.getConnectionsClient`) *or* raw BLE + Wi-Fi Direct.
-
-If you choose platform channels:
-- Create a `MethodChannel('turnnotifier/p2p')` on Dart side (already noted in comments).
-- iOS: add a Swift file in `ios/Runner/` (e.g., `P2PBridge.swift`) and wire to the same channel name.
-- Android: add a Kotlin file in `android/app/src/main/kotlin/.../P2PBridge.kt` and wire to the same channel.
-
----
-
-## Minimal permissions (add when you implement radios)
-
-### iOS (Info.plist additions)
-- `NSBluetoothAlwaysUsageDescription` (string)
-- Optional: Background Modes → "Uses Bluetooth LE accessories" if you want limited background scan/advert.
-- Optional: `NSLocalNetworkUsageDescription` (if you use local networking).
-
-### Android (AndroidManifest additions)
-For Android 12+ (API 31+):
-```xml
-<uses-permission android:name="android.permission.BLUETOOTH_SCAN" />
-<uses-permission android:name="android.permission.BLUETOOTH_ADVERTISE" />
-<uses-permission android:name="android.permission.BLUETOOTH_CONNECT" />
-```
-For Android 10–11:
-```xml
-<uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
-```
-If running background scan during a session, consider a foreground service with:
-```xml
-<service
-    android:name=".TurnNotifierService"
-    android:foregroundServiceType="connectedDevice" />
-```
-
----
-
-## App structure (overview)
+YourTurn follows a **Provider-based state management** pattern with clear separation of concerns:
 
 ```
 lib/
-  main.dart                  # App, simple UI for leader & players
-  models.dart                # Session, Player models
-  controllers/
-    session_controller.dart  # State management (Provider/ChangeNotifier)
-  services/
-    p2p_service.dart         # P2P interface (to be implemented natively later)
-    p2p_service_stub.dart    # In-memory simulator (works today)
-  widgets/
-    player_tile.dart         # Small UI helper
+├── main.dart                    # App entry point
+├── models.dart                  # Data models (Player, Session)
+├── controllers/                 # Business logic layer
+│   └── session_controller.dart  # Game session state management
+├── services/                    # Platform-specific services
+│   ├── p2p_service.dart        # P2P interface definition
+│   └── p2p_service_stub.dart   # Development stub
+└── widgets/                     # UI components
+    └── player_tile.dart        # Reusable player UI
 ```
 
-## Next steps
+For detailed architecture guidelines, see [Architecture Documentation](.github/copilot-instructions-architecture.md).
 
-- Replace the stub with real P2P:
-  - iOS: MultipeerConnectivity (serviceType "turnntf").
-  - Android: Nearby Connections (Strategy.P2P_CLUSTER) **or** BLE advert+scan for discovery + short GATT writes for ACKs.
-- Add local notifications (e.g., `flutter_local_notifications`) to alert the next player.
-- Handle background throttling on iOS and a foreground service on Android during a session.
+## Connectivity Implementation
 
-MIT License. Have fun!
+The P2P connectivity system uses an **abstract service interface** with swappable implementations:
+
+**Phase 1 (Current)**: BLE-only implementation for cross-platform support  
+**Phase 2 (Planned)**: Platform-specific enhancements (MultipeerConnectivity for iOS, Nearby Connections for Android)
+
+For complete connectivity design and technical decisions, see [Connectivity Design Document](docs/connectivity-design.md).
+
+## Development
+
+### Building
+
+```bash
+# Debug build
+flutter run
+
+# Release build (Android)
+flutter build apk --release
+
+# Release build (iOS)
+flutter build ios --release
+```
+
+### Testing
+
+```bash
+# Run all tests
+flutter test
+
+# Run with coverage
+flutter test --coverage
+```
+
+For testing guidelines, see [Testing Documentation](.github/copilot-instructions-testing.md).
+
+### Required Permissions
+
+#### iOS (Info.plist)
+```xml
+<key>NSBluetoothAlwaysUsageDescription</key>
+<string>YourTurn needs Bluetooth to connect with nearby players</string>
+
+<key>NSLocalNetworkUsageDescription</key>
+<string>YourTurn uses local network to discover nearby game sessions</string>
+```
+
+#### Android (AndroidManifest.xml)
+```xml
+<!-- Bluetooth permissions -->
+<uses-permission android:name="android.permission.BLUETOOTH" />
+<uses-permission android:name="android.permission.BLUETOOTH_ADMIN" />
+<uses-permission android:name="android.permission.BLUETOOTH_CONNECT" />
+<uses-permission android:name="android.permission.BLUETOOTH_ADVERTISE" />
+<uses-permission android:name="android.permission.BLUETOOTH_SCAN" />
+
+<!-- Location permissions (required for BLE scanning) -->
+<uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
+<uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />
+```
+
+## Deployment
+
+Builds are automatically deployed to Firebase App Distribution via Codemagic CI/CD. See `codemagic.yaml` for configuration.
+
+For manual deployment setup:
+- [Firebase Setup Guide](docs/firebase-setup.md)
+- [iOS Code Signing Setup](docs/ios-signing-setup-guide.md)
+
+## Documentation
+
+### Project Documentation
+- [Requirements](docs/requirements.md) - Complete functional and technical requirements
+- [Connectivity Design](docs/connectivity-design.md) - P2P implementation strategy and decisions
+- [Initial Conversation](docs/initial-conversation.txt) - Project genesis notes
+
+### Development Guidelines
+- [Architecture Guidelines](.github/copilot-instructions-architecture.md) - Code organization and patterns
+- [Connectivity Guidelines](.github/copilot-instructions-connectivity.md) - P2P networking details
+- [Documentation Guidelines](.github/copilot-instructions-documentation.md) - Documentation standards
+- [Testing Guidelines](.github/copilot-instructions-testing.md) - Testing strategies
+- [UI Guidelines](.github/copilot-instructions-ui.md) - Design system and components
+
+## Contributing
+
+1. Read the [Architecture Guidelines](.github/copilot-instructions-architecture.md)
+2. Follow the [Documentation Standards](.github/copilot-instructions-documentation.md)
+3. Write tests following [Testing Guidelines](.github/copilot-instructions-testing.md)
+4. Use the [UI Design System](.github/copilot-instructions-ui.md) for consistency
+
+## License
+
+MIT License - See LICENSE file for details
+
+## Roadmap
+
+### Phase 1 (Current - MVP)
+- [x] Basic UI structure and navigation
+- [x] Session management (create/join)
+- [x] Player management and turn order
+- [ ] BLE P2P implementation
+- [ ] Timer feature with haptic feedback
+- [ ] Time tracking and end-game summary
+
+### Phase 2 (Planned)
+- [ ] Platform-specific P2P enhancements (MultipeerConnectivity/Nearby)
+- [ ] Connection resilience improvements
+- [ ] Reorder turn order mid-game
+- [ ] Change start player mid-game
+- [ ] Dynamic timer adjustment
+
+### Phase 3 (Future)
+- [ ] Turn Focus feature (app locking)
+- [ ] Pause/resume game
+- [ ] Player reconnection logic
+- [ ] Remove player mid-game
+- [ ] Game statistics and history
+
+---
+
+Built with ❤️ for tabletop gaming enthusiasts
