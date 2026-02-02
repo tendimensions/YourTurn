@@ -3,7 +3,7 @@ import 'package:flutter/foundation.dart';
 
 import '../models.dart';
 import '../services/p2p_service.dart';
-import '../services/p2p_service_stub.dart';
+import '../services/p2p_service_factory.dart';
 import '../services/screen_service.dart';
 
 /// Controller for managing game session state.
@@ -21,7 +21,7 @@ class SessionController extends ChangeNotifier {
   SessionController({
     P2PService? p2p,
     ScreenService? screenService,
-  })  : _p2p = p2p ?? InMemoryP2PService(),
+  })  : _p2p = p2p ?? createP2PService(),
         _screenService = screenService ?? ScreenServiceStub();
 
   // === Basic Getters ===
