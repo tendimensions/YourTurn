@@ -23,17 +23,22 @@
 
 ### Networking & Communication
 
-- **Primary Transport**: Combination of BLE and platform-specific technologies for optimal reliability
-  - Bluetooth Low Energy (BLE) for basic cross-platform connectivity
-  - iOS: MultipeerConnectivity framework for enhanced iOS device performance
-  - Android: Google Play Services Nearby Connections API for enhanced Android performance
+> **IMPORTANT: Same WiFi Network Requirement**
+>
+> All devices must be connected to the same WiFi network to use YourTurn. This is the current implementation for cross-platform (iOS + Android) support. While not the preferred long-term solution, it provides the simplest and most reliable connectivity for mixed platform groups. Future versions may support direct peer-to-peer connectivity without this requirement.
+
+- **Network Requirement**: All players must be on the same local WiFi network
+- **Primary Transport**: Combination of WiFi (TCP/IP) and platform-specific technologies for optimal reliability
+  - WiFi TCP/IP sockets for cross-platform connectivity (iOS + Android)
+  - iOS: MultipeerConnectivity framework for iOS-only sessions
+  - Android: Google Play Services Nearby Connections API for Android-only sessions
 - **Discovery Method**: Automatic session discovery
   - Players launching the app see a list of all nearby sessions waiting to start
   - One-tap selection to join a specific session
-  - No manual code entry or QR scanning required
+  - QR code scanning available for manual joining
 - **Range**: 10-foot radius (typical table distance)
 - **Bandwidth**: Low - only small notification messages (< 100 bytes per message)
-- **Network Type**: Local peer-to-peer, no internet connectivity required
+- **Network Type**: Local WiFi network, no internet connectivity required (WiFi required but internet access is not)
 - **Session Visibility**: Active games show as "In Progress" but cannot be joined
 
 ### Data Requirements
@@ -123,9 +128,10 @@
 
 #### 3.1 Short-Range Network Requirements
 
+- **FR-3.0**: All devices must be connected to the same WiFi network (current requirement for cross-platform support)
 - **FR-3.1**: All devices must maintain connectivity within short range (table distance)
 - **FR-3.2**: Network must support both Android and iOS devices simultaneously
-- **FR-3.3**: Connection method must work without internet connectivity
+- **FR-3.3**: Connection method must work without internet connectivity (WiFi network required, but not internet access)
 - **FR-3.4**: Devices remain connected while sitting around a table (approximately 2-10 feet)
 - **FR-3.5**: Network must support real-time turn state updates across all devices
 
@@ -470,8 +476,8 @@
 ### Critical Technical Decisions (Based on Requirements Review)
 
 1. **Color Specifications**: Active=#129c26, Waiting=#c03317 (defined in AppTheme)
-2. **Network Technology**: Hybrid approach using BLE + platform-specific enhancements (Multipeer/Nearby)
-3. **Session Discovery**: Automatic list-based discovery, no manual codes or QR scanning
+2. **Network Technology**: Same WiFi network required for cross-platform support; platform-specific P2P for same-OS sessions
+3. **Session Discovery**: Automatic list-based discovery with QR code fallback
 4. **Timer Range**: 1-15 minutes in 1-minute increments, with "no timer" option
 5. **Orientation**: Portrait only (locked)
 6. **Screen Behavior**: Wake lock enabled during active game
@@ -479,6 +485,7 @@
 8. **Connection Status**: Displayed as dot indicators next to player names
 9. **Mid-Game Features**: Reorder turn order and change start player available via menu
 10. **Deferred Features**: Remove player mid-game, pause game, reconnection logic, Turn Focus
+11. **WiFi Requirement**: Temporary solution for cross-platform - not preferred long-term but easiest current approach
 
 ---
 

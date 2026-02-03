@@ -4,7 +4,26 @@
 
 YourTurn requires local peer-to-peer (P2P) networking to enable turn notifications between devices playing the same tabletop game. This is a **critical and complex** component that enables the core functionality of the app.
 
-## ⚠️ Critical: Cross-Platform Limitation
+## ⚠️ Critical: Same WiFi Network Requirement
+
+> **All devices must be connected to the same WiFi network to use YourTurn.**
+>
+> This is a temporary requirement for cross-platform (iOS + Android) support. While not the preferred long-term solution, it provides the simplest and most reliable connectivity for mixed platform groups. Future versions may support direct P2P without this dependency.
+
+**Why this approach?**
+
+- Simplest cross-platform solution available
+- Works reliably in most gaming scenarios (home, cafe, game store)
+- No complex BLE GATT implementation required
+- Standard TCP/IP sockets work identically on iOS and Android
+
+**Limitations:**
+
+- Requires WiFi network infrastructure
+- Won't work outdoors without mobile hotspot
+- Some public networks have client isolation
+
+## Cross-Platform Limitation (Background)
 
 **iOS and Android native P2P protocols DO NOT interoperate:**
 
@@ -15,14 +34,15 @@ These protocols cannot discover or communicate with each other. This means:
 
 - ✅ iOS-to-iOS works via MultipeerConnectivity
 - ✅ Android-to-Android works via Nearby Connections
-- ❌ iOS-to-Android does NOT work with native P2P
+- ✅ iOS-to-Android works via same WiFi network (current solution)
 
-**Current Workarounds:**
+**Current Implementation:**
 
-1. QR codes for session discovery (implemented)
-2. Manual session code entry (implemented)
+1. Same WiFi network required for cross-platform sessions
+2. QR codes for session discovery (implemented)
+3. Manual session code entry (implemented)
 
-**For true cross-platform communication, additional work is needed** - see the "Cross-Platform Options" section below.
+**For direct P2P without WiFi (future), BLE GATT implementation would be needed** - see the "Cross-Platform Options" section below.
 
 ## Current Implementation Status
 

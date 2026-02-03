@@ -5,7 +5,7 @@
   "packages": [
     {
       "name": "yourturn",
-      "version": "0.0.3+1",
+      "version": "0.0.4+1",
       "dependencies": [
         "cupertino_icons",
         "flutter",
@@ -41,6 +41,16 @@
         "stream_channel",
         "test_api",
         "vector_math"
+      ]
+    },
+    {
+      "name": "mobile_scanner",
+      "version": "5.2.3",
+      "dependencies": [
+        "flutter",
+        "flutter_web_plugins",
+        "plugin_platform_interface",
+        "web"
       ]
     },
     {
@@ -191,6 +201,27 @@
       "dependencies": []
     },
     {
+      "name": "plugin_platform_interface",
+      "version": "2.1.8",
+      "dependencies": [
+        "meta"
+      ]
+    },
+    {
+      "name": "flutter_web_plugins",
+      "version": "0.0.0",
+      "dependencies": [
+        "flutter"
+      ]
+    },
+    {
+      "name": "qr",
+      "version": "3.0.2",
+      "dependencies": [
+        "meta"
+      ]
+    },
+    {
       "name": "package_info_plus",
       "version": "9.0.0",
       "dependencies": [
@@ -230,13 +261,6 @@
         "flutter",
         "meta",
         "plugin_platform_interface"
-      ]
-    },
-    {
-      "name": "flutter_web_plugins",
-      "version": "0.0.0",
-      "dependencies": [
-        "flutter"
       ]
     },
     {
@@ -376,13 +400,6 @@
       "dependencies": []
     },
     {
-      "name": "plugin_platform_interface",
-      "version": "2.1.8",
-      "dependencies": [
-        "meta"
-      ]
-    },
-    {
       "name": "typed_data",
       "version": "1.4.0",
       "dependencies": [
@@ -410,23 +427,6 @@
       "dependencies": [
         "collection",
         "meta"
-      ]
-    },
-    {
-      "name": "qr",
-      "version": "3.0.2",
-      "dependencies": [
-        "meta"
-      ]
-    },
-    {
-      "name": "mobile_scanner",
-      "version": "5.2.3",
-      "dependencies": [
-        "flutter",
-        "flutter_web_plugins",
-        "plugin_platform_interface",
-        "web"
       ]
     }
   ],

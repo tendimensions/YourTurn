@@ -2,6 +2,12 @@
 
 All notable changes to YourTurn will be documented in this file.
 
+## [0.0.4] - 2026-02-03
+
+- Corrected connectivity issues and now requires same WiFi network for the time being
+
+---
+
 ## [0.0.3] - 2026-02-02
 
 - Added connectivity and joining sessions capability

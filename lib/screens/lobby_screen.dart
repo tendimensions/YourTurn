@@ -105,6 +105,8 @@ class _LobbyScreenState extends State<LobbyScreen> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
+              _buildWifiRequirementNote(),
+              const SizedBox(height: 16),
               _buildCreateSection(context),
               const SizedBox(height: 32),
               const Divider(),
@@ -404,6 +406,51 @@ class _LobbyScreenState extends State<LobbyScreen> {
         _joinSession(context);
       }
     }
+  }
+
+  Widget _buildWifiRequirementNote() {
+    return Container(
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: Colors.orange.shade50,
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(color: Colors.orange.shade200),
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Icon(
+            Icons.wifi,
+            color: Colors.orange.shade700,
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'Same WiFi Network Required',
+                  style: TextStyle(
+                    color: Colors.orange.shade800,
+                    fontWeight: FontWeight.bold,
+                    fontSize: 14,
+                  ),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  'All players must be connected to the same WiFi network. '
+                  'This is the current method for cross-platform support.',
+                  style: TextStyle(
+                    color: Colors.orange.shade700,
+                    fontSize: 13,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
   }
 
   Widget _buildInfoNote() {

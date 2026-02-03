@@ -6,12 +6,19 @@ This document captures the design decisions, technical approaches, and implement
 
 ## Critical Requirements
 
+### Network Requirement
+
+> **IMPORTANT: All devices must be connected to the same WiFi network to use YourTurn.**
+>
+> This is a temporary requirement for the current implementation. While not the ideal long-term solution, using a shared WiFi network provides the simplest and most reliable cross-platform connectivity for mixed iOS/Android groups. Future versions may support direct peer-to-peer connectivity without WiFi network dependency.
+
 ### Functional Requirements
 
+- **Same WiFi Network**: All players must be connected to the same local WiFi network
 - **Range**: 10-foot radius (typical tabletop gaming distance)
 - **Player Count**: Support 2-8 devices simultaneously
 - **Cross-Platform**: Must work seamlessly between iOS and Android devices
-- **No Internet**: Local-only connectivity, no cloud dependencies
+- **No Internet**: Local-only connectivity, no cloud dependencies (WiFi network required but internet access is not)
 - **Real-Time**: Turn state updates must synchronize within 2 seconds
 - **Reliability**: 99%+ successful message delivery
 - **Background Operation**: Must work with app in background or screen locked
@@ -39,13 +46,32 @@ This document captures the design decisions, technical approaches, and implement
 
 This is a fundamental architectural limitation, not a bug. These are proprietary protocols designed by Apple and Google respectively, and they do not share a common transport layer for discovery or communication.
 
+### Current Solution: Same WiFi Network Requirement
+
+> **For cross-platform support (iOS + Android in the same session), all devices must be connected to the same WiFi network.**
+>
+> This is the simplest solution for enabling mixed platform groups. While not ideal (requires WiFi infrastructure), it provides reliable connectivity without complex BLE GATT implementations. This approach is documented as a temporary workaround - future versions may support direct P2P without WiFi dependency.
+
+**Why WiFi?**
+
+- Works across iOS and Android without platform-specific limitations
+- Simple TCP/IP socket communication
+- Reliable and fast
+- Most gaming scenarios (home, cafe, game store) have WiFi available
+
+**Limitations:**
+
+- Requires WiFi network (won't work outdoors without hotspot)
+- Some public networks have client isolation (devices can't see each other)
+- Adds dependency on network infrastructure
+
 ### Current Implementation Status
 
 We have implemented platform-specific P2P services:
 
 - **iOS**: `P2PHandler.swift` using MultipeerConnectivity → Works iOS-to-iOS ✅
 - **Android**: `P2PHandler.kt` using Nearby Connections → Works Android-to-Android ✅
-- **Cross-platform**: iOS ↔ Android → **Does NOT work** ❌
+- **Cross-platform**: iOS ↔ Android via same WiFi network → **Works** ✅ (requires same WiFi)
 
 ### Implications
 
@@ -954,11 +980,9 @@ Consider these factors when making the decision:
 
 ### Recommendation
 
-**For MVP**: Option 5 (Accept Limitation) with QR codes for easy same-platform joining.
+**Current Implementation (v1.0)**: Option 2 (Local WiFi) - All devices must be on the same WiFi network. This is the simplest cross-platform solution and covers the common case of friends gaming at home, cafe, or game store. While not the ideal long-term solution, it provides reliable connectivity without complex native implementations.
 
-**For v1.1**: Option 2 (Local WiFi) as the first cross-platform solution - it's the simplest to implement and covers the common case of friends gaming at home or a cafe.
-
-**For v2.0**: Option 4 (Hybrid) with BLE as the universal fallback for venues without shared WiFi.
+**For v2.0 (Future)**: Option 4 (Hybrid) with BLE as the universal fallback for venues without shared WiFi. This would remove the WiFi dependency but requires significant development effort for cross-platform BLE GATT implementation.
 
 ### Action Items
 
@@ -996,11 +1020,12 @@ Consider these factors when making the decision:
 
 ## Revision History
 
-| Version | Date       | Author | Changes                          |
-|---------|------------|--------|----------------------------------|
-| 1.0     | 2026-02-01 | Team   | Initial design document          |
-| 1.1     | 2026-02-02 | Team   | Added cross-platform interoperability section, QR code implementation details, open discussion for connectivity decision |
-| 2.0     | TBD        |        | Phase 2 platform enhancements    |
+| Version | Date       | Author | Changes                                                                                                                    |
+|---------|------------|--------|----------------------------------------------------------------------------------------------------------------------------|
+| 1.0     | 2026-02-01 | Team   | Initial design document                                                                                                    |
+| 1.1     | 2026-02-02 | Team   | Added cross-platform interoperability section, QR code implementation details, open discussion for connectivity decision   |
+| 1.2     | 2026-02-03 | Team   | Added same WiFi network requirement as current cross-platform solution. Documented as temporary workaround                 |
+| 2.0     | TBD        |        | Phase 2 platform enhancements (BLE cross-platform)                                                                         |
 
 ---
 

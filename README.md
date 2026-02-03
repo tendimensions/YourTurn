@@ -14,6 +14,8 @@ A local peer-to-peer turn notification system for tabletop games, built with Flu
 - **Time Tracking**: See total time each player spent on their turns
 - **Team Leader Controls**: Menu for managing game settings mid-game
 
+> **Network Requirement**: All devices must be connected to the same WiFi network. This is the current implementation for cross-platform support - while not the ideal long-term solution, it provides the simplest and most reliable connectivity for mixed iOS/Android groups. Internet access is not required, only a shared local network.
+
 ## Getting Started
 
 ### Prerequisites

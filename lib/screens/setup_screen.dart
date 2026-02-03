@@ -54,6 +54,8 @@ class SetupScreen extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
                 _buildSessionInfo(controller),
+                const SizedBox(height: 12),
+                _buildWifiReminder(),
                 const SizedBox(height: 24),
                 _buildTimerSection(context, controller),
                 const SizedBox(height: 24),
@@ -80,6 +82,8 @@ class SetupScreen extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
                 _buildSessionInfo(controller),
+                const SizedBox(height: 12),
+                _buildWifiReminder(),
                 const SizedBox(height: 24),
                 _buildWaitingInfo(controller),
                 const SizedBox(height: 24),
@@ -158,6 +162,31 @@ class SetupScreen extends StatelessWidget {
             ),
           ],
         ),
+      ),
+    );
+  }
+
+  Widget _buildWifiReminder() {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+      decoration: BoxDecoration(
+        color: Colors.orange.shade50,
+        borderRadius: BorderRadius.circular(6),
+      ),
+      child: Row(
+        children: [
+          Icon(Icons.wifi, size: 16, color: Colors.orange.shade700),
+          const SizedBox(width: 8),
+          Expanded(
+            child: Text(
+              'Ensure all players are on the same WiFi network',
+              style: TextStyle(
+                color: Colors.orange.shade700,
+                fontSize: 12,
+              ),
+            ),
+          ),
+        ],
       ),
     );
   }
