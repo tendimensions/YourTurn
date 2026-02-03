@@ -67,11 +67,13 @@ This is a fundamental architectural limitation, not a bug. These are proprietary
 
 ### Current Implementation Status
 
-We have implemented platform-specific P2P services:
+We have implemented multiple P2P services:
 
-- **iOS**: `P2PHandler.swift` using MultipeerConnectivity → Works iOS-to-iOS ✅
-- **Android**: `P2PHandler.kt` using Nearby Connections → Works Android-to-Android ✅
-- **Cross-platform**: iOS ↔ Android via same WiFi network → **Works** ✅ (requires same WiFi)
+- **WiFi (Default)**: `p2p_service_wifi.dart` using TCP/IP sockets + UDP discovery → **Cross-platform** ✅
+- **iOS Native**: `P2PHandler.swift` using MultipeerConnectivity → Works iOS-to-iOS ✅
+- **Android Native**: `P2PHandler.kt` using Nearby Connections → Works Android-to-Android ✅
+
+**The WiFi service is the default** and enables cross-platform connectivity when all devices are on the same WiFi network.
 
 ### Implications
 
@@ -1025,7 +1027,8 @@ Consider these factors when making the decision:
 | 1.0     | 2026-02-01 | Team   | Initial design document                                                                                                    |
 | 1.1     | 2026-02-02 | Team   | Added cross-platform interoperability section, QR code implementation details, open discussion for connectivity decision   |
 | 1.2     | 2026-02-03 | Team   | Added same WiFi network requirement as current cross-platform solution. Documented as temporary workaround                 |
-| 2.0     | TBD        |        | Phase 2 platform enhancements (BLE cross-platform)                                                                         |
+| 1.3     | 2026-02-03 | Team   | Implemented WifiP2PService with TCP/IP sockets and UDP broadcast discovery. Cross-platform now works!                      |
+| 2.0     | TBD        |        | Phase 2 platform enhancements (BLE cross-platform for offline scenarios)                                                   |
 
 ---
 

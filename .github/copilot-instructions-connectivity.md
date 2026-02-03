@@ -46,15 +46,31 @@ These protocols cannot discover or communicate with each other. This means:
 
 ## Current Implementation Status
 
-### Platform-Specific Services
+### P2P Services
 
-| Platform | File | Technology | Status |
-|----------|------|------------|--------|
-| iOS | `ios/Runner/P2PHandler.swift` | MultipeerConnectivity | ✅ Implemented |
-| Android | `android/.../P2PHandler.kt` | Nearby Connections | ✅ Implemented |
-| Dart (iOS) | `lib/services/p2p_service_ios.dart` | Platform Channel | ✅ Implemented |
-| Dart (Android) | `lib/services/p2p_service_android.dart` | Platform Channel | ✅ Implemented |
-| Stub | `lib/services/p2p_service_stub.dart` | In-Memory | ✅ Implemented |
+| Service | File | Technology | Cross-Platform? | Status |
+|---------|------|------------|-----------------|--------|
+| **WiFi (Default)** | `lib/services/p2p_service_wifi.dart` | TCP/IP Sockets + UDP Discovery | ✅ Yes | ✅ Implemented |
+| iOS Native | `lib/services/p2p_service_ios.dart` | MultipeerConnectivity | ❌ iOS only | ✅ Implemented |
+| Android Native | `lib/services/p2p_service_android.dart` | Nearby Connections | ❌ Android only | ✅ Implemented |
+| Stub | `lib/services/p2p_service_stub.dart` | In-Memory | N/A | ✅ Implemented |
+
+### Factory Configuration
+
+The P2P service factory (`p2p_service_factory.dart`) supports three modes:
+
+```dart
+// WiFi mode (default) - cross-platform, requires same WiFi network
+P2PService createP2PService(mode: P2PMode.wifi);
+
+// Platform-native mode - better performance but NOT cross-platform
+P2PService createP2PService(mode: P2PMode.platformNative);
+
+// Stub mode - for testing/development
+P2PService createP2PService(mode: P2PMode.stub);
+```
+
+**Default mode is WiFi** for cross-platform support.
 
 ### QR Code Support (Discovery Fallback)
 

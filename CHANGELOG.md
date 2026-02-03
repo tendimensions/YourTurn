@@ -4,7 +4,25 @@ All notable changes to YourTurn will be documented in this file.
 
 ## [0.0.4] - 2026-02-03
 
-- Corrected connectivity issues and now requires same WiFi network for the time being
+### Added
+
+- WiFi-based P2P service (`p2p_service_wifi.dart`) for cross-platform connectivity
+- TCP/IP socket communication for reliable message delivery between iOS and Android
+- UDP broadcast discovery for automatic session detection on same network
+- P2P service factory with configurable modes (WiFi, Platform-native, Stub)
+- WiFi requirement notification banner on lobby screen
+- WiFi reminder on setup screen for all players
+
+### Changed
+
+- Default P2P mode is now WiFi for cross-platform support
+- Updated documentation to reflect same WiFi network requirement
+
+### Notes
+
+- All devices must be connected to the same WiFi network for cross-platform sessions
+- This is the current solution for iOS + Android interoperability (not the ideal long-term solution, but simplest approach)
+- Platform-native mode (MultipeerConnectivity/Nearby Connections) still available for same-OS sessions
 
 ---
 
