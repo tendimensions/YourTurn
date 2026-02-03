@@ -48,5 +48,7 @@
 		<string>_yourturn-game._tcp</string>
 		<string>_yourturn-game._udp</string>
 	</array>
+	<key>NSBluetoothAlwaysUsageDescription</key>
+	<string>YourTurn needs Bluetooth to discover nearby players for local multiplayer gaming.</string>
 </dict>
 </plist>
