@@ -24,14 +24,41 @@ class _QRScannerScreenState extends State<QRScannerScreen> {
 
     final List<Barcode> barcodes = capture.barcodes;
     for (final barcode in barcodes) {
-      final String? code = barcode.rawValue;
-      if (code != null && code.startsWith('yourturn:')) {
+      final String? rawValue = barcode.rawValue;
+      if (rawValue != null && rawValue.startsWith('yourturn:')) {
         _hasScanned = true;
-        final sessionCode = code.substring(9); // Remove 'yourturn:' prefix
-        Navigator.pop(context, sessionCode);
+        final result = _parseQRData(rawValue);
+        Navigator.pop(context, result);
         return;
       }
     }
+  }
+
+  /// Parses QR data in format: yourturn:CODE or yourturn:CODE:IP:PORT
+  /// Returns a Map with 'code' and optionally 'connectionInfo'
+  Map<String, String> _parseQRData(String rawValue) {
+    // Remove 'yourturn:' prefix
+    final data = rawValue.substring(9);
+
+    // Check if it contains connection info (format: CODE:IP:PORT)
+    // Session codes are typically short (e.g., ABC-1), so we look for IP:PORT pattern
+    final parts = data.split(':');
+
+    if (parts.length >= 3) {
+      // Format: CODE:IP:PORT - IP might contain dots, port is numeric
+      // Session code is the first part, rest is IP:PORT
+      final code = parts[0];
+      final connectionInfo = parts.sublist(1).join(':');
+      return {
+        'code': code,
+        'connectionInfo': connectionInfo,
+      };
+    }
+
+    // Simple format: just CODE
+    return {
+      'code': data,
+    };
   }
 
   @override

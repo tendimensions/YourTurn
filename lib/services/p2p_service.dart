@@ -12,6 +12,11 @@ abstract class P2PService {
   /// Emits discovered sessions (nearby groups within radio range).
   Stream<DiscoveredSession> get discoveredSessions;
 
+  /// Get connection info for the current session (if hosting).
+  /// Returns null if not hosting or info not available.
+  /// Format: "IP:PORT" for WiFi-based connections.
+  String? get hostConnectionInfo;
+
   /// Start advertising/hosting a session as leader.
   Future<Session> createSession({required String leaderName});
 
@@ -22,9 +27,12 @@ abstract class P2PService {
   Future<void> stopDiscovery();
 
   /// Join a session by short code. Returns the joined [Session] snapshot.
+  /// [connectionInfo] is optional - if provided (format: "IP:PORT"), connects
+  /// directly without requiring prior discovery. Used for QR code joining.
   Future<Session> joinSession({
     required String code,
     required String playerName,
+    String? connectionInfo,
   });
 
   /// Start the game (transition from setup to active phase).

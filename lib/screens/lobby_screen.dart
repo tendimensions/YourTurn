@@ -393,17 +393,25 @@ class _LobbyScreenState extends State<LobbyScreen> {
     );
   }
 
+  // Stores connection info from QR code scan for direct connection
+  String? _qrConnectionInfo;
+
   Future<void> _scanQRCode() async {
-    final code = await Navigator.push<String>(
+    final result = await Navigator.push<Map<String, String>>(
       context,
       MaterialPageRoute(builder: (context) => const QRScannerScreen()),
     );
 
-    if (code != null && code.isNotEmpty && mounted) {
-      _sessionCodeController.text = code;
-      // Auto-join if we have a name
-      if (_playerNameController.text.trim().isNotEmpty) {
-        _joinSession(context);
+    if (result != null && mounted) {
+      final code = result['code'];
+      _qrConnectionInfo = result['connectionInfo'];
+
+      if (code != null && code.isNotEmpty) {
+        _sessionCodeController.text = code;
+        // Auto-join if we have a name
+        if (_playerNameController.text.trim().isNotEmpty) {
+          _joinSession(context);
+        }
       }
     }
   }
@@ -589,7 +597,14 @@ class _LobbyScreenState extends State<LobbyScreen> {
 
     try {
       final controller = context.read<SessionController>();
-      await controller.joinSession(code, name);
+      // Use connectionInfo from QR code if available for direct connection
+      await controller.joinSession(
+        code,
+        name,
+        connectionInfo: _qrConnectionInfo,
+      );
+      // Clear connection info after use
+      _qrConnectionInfo = null;
     } catch (e) {
       if (mounted) {
         _showError('Failed to join session: $e');

@@ -218,6 +218,9 @@ class IOsP2PService implements P2PService {
   Stream<DiscoveredSession> get discoveredSessions => _discoveredCtrl.stream;
 
   @override
+  String? get hostConnectionInfo => null; // MultipeerConnectivity handles connections internally
+
+  @override
   Future<Session> createSession({required String leaderName}) async {
     final id = _uuid.v4();
     final code = Session.shortCodeFromId(id);
@@ -273,7 +276,9 @@ class IOsP2PService implements P2PService {
   Future<Session> joinSession({
     required String code,
     required String playerName,
+    String? connectionInfo,
   }) async {
+    // connectionInfo is ignored - MultipeerConnectivity handles connections via discovery
     try {
       final result = await _channel.invokeMethod('joinSession', {
         'sessionCode': code,

@@ -98,7 +98,12 @@ class SetupScreen extends StatelessWidget {
 
   Widget _buildSessionInfo(SessionController controller) {
     final sessionCode = controller.session?.code ?? '';
-    final qrData = 'yourturn:$sessionCode';
+    // Include connection info for direct WiFi joining: yourturn:CODE:IP:PORT
+    // Falls back to yourturn:CODE if no connection info (non-WiFi modes)
+    final connectionInfo = controller.hostConnectionInfo;
+    final qrData = connectionInfo != null
+        ? 'yourturn:$sessionCode:$connectionInfo'
+        : 'yourturn:$sessionCode';
 
     return Card(
       child: Padding(

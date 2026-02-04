@@ -5,7 +5,8 @@
       "Bash(flutter analyze:*)",
       "Bash(flutter test:*)",
       "Bash(tree:*)",
-      "Bash(dir:*)"
+      "Bash(dir:*)",
+      "Bash(flutter build:*)"
     ]
   }
 }

@@ -61,9 +61,54 @@ class WifiP2PService implements P2PService {
   Stream<DiscoveredSession> get discoveredSessions => _discoveredCtrl.stream;
 
   @override
+  String? get hostConnectionInfo {
+    if (!_isHost || _server == null) return null;
+    final localIP = _getLocalIPSync();
+    if (localIP == null) return null;
+    return '$localIP:${_server!.port}';
+  }
+
+  // Cached local IP address
+  String? _cachedLocalIP;
+
+  /// Gets the local IP address synchronously (from cache).
+  String? _getLocalIPSync() => _cachedLocalIP;
+
+  /// Fetches and caches the local WiFi IP address.
+  Future<String?> _fetchLocalIP() async {
+    try {
+      final interfaces = await NetworkInterface.list(
+        type: InternetAddressType.IPv4,
+        includeLinkLocal: false,
+      );
+      for (final interface in interfaces) {
+        // Skip loopback and virtual interfaces
+        if (interface.name.toLowerCase().contains('lo') ||
+            interface.name.toLowerCase().contains('vmnet') ||
+            interface.name.toLowerCase().contains('vbox')) {
+          continue;
+        }
+        for (final addr in interface.addresses) {
+          // Skip loopback addresses
+          if (!addr.isLoopback) {
+            _cachedLocalIP = addr.address;
+            return addr.address;
+          }
+        }
+      }
+    } catch (e) {
+      print('[WiFi P2P] Failed to get local IP: $e');
+    }
+    return null;
+  }
+
+  @override
   Future<Session> createSession({required String leaderName}) async {
     final id = _uuid.v4();
     final code = Session.shortCodeFromId(id);
+
+    // Get local IP address before starting server
+    await _fetchLocalIP();
 
     // Start TCP server
     _server = await ServerSocket.bind(InternetAddress.anyIPv4, _defaultPort);
@@ -305,16 +350,28 @@ class WifiP2PService implements P2PService {
   Future<Session> joinSession({
     required String code,
     required String playerName,
+    String? connectionInfo,
   }) async {
-    // Find the host info from discovered sessions
-    final hostInfo = _discoveredSessions['${code}_host'];
-    if (hostInfo == null) {
-      throw Exception('Session not found. Make sure you\'re on the same WiFi network.');
-    }
+    String hostAddress;
+    int hostPort;
 
-    final hostParts = hostInfo.code.split(':');
-    final hostAddress = hostParts[0];
-    final hostPort = int.parse(hostParts[1]);
+    if (connectionInfo != null && connectionInfo.contains(':')) {
+      // Direct connection via QR code or manual entry
+      final hostParts = connectionInfo.split(':');
+      hostAddress = hostParts[0];
+      hostPort = int.parse(hostParts[1]);
+      print('[WiFi P2P] Using direct connection info: $connectionInfo');
+    } else {
+      // Find the host info from discovered sessions
+      final hostInfo = _discoveredSessions['${code}_host'];
+      if (hostInfo == null) {
+        throw Exception(
+            'Session not found. Make sure you\'re on the same WiFi network and the host is advertising.');
+      }
+      final hostParts = hostInfo.code.split(':');
+      hostAddress = hostParts[0];
+      hostPort = int.parse(hostParts[1]);
+    }
 
     print('[WiFi P2P] Connecting to $hostAddress:$hostPort');
 

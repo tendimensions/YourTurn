@@ -97,9 +97,23 @@ class SessionController extends ChangeNotifier {
   /// Stream of discovered sessions
   Stream<DiscoveredSession> get discoveredSessions => _p2p.discoveredSessions;
 
+  /// Get connection info for the current session (if hosting).
+  /// Returns "IP:PORT" format for WiFi connections, null otherwise.
+  String? get hostConnectionInfo => _p2p.hostConnectionInfo;
+
   /// Join an existing session by code
-  Future<void> joinSession(String code, String playerName) async {
-    final s = await _p2p.joinSession(code: code, playerName: playerName);
+  /// [connectionInfo] is optional - if provided (format: "IP:PORT"), connects
+  /// directly without requiring prior discovery. Used for QR code joining.
+  Future<void> joinSession(
+    String code,
+    String playerName, {
+    String? connectionInfo,
+  }) async {
+    final s = await _p2p.joinSession(
+      code: code,
+      playerName: playerName,
+      connectionInfo: connectionInfo,
+    );
     _session = s;
     _myPlayerId = s.players.last.id;
     _subscribeToEvents();

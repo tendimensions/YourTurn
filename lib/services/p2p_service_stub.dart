@@ -18,6 +18,9 @@ class InMemoryP2PService implements P2PService {
   Stream<DiscoveredSession> get discoveredSessions => _discoveredCtrl.stream;
 
   @override
+  String? get hostConnectionInfo => null; // Stub doesn't support network connections
+
+  @override
   Future<Session> createSession({required String leaderName}) async {
     final id = _uuid.v4();
     final code = Session.shortCodeFromId(id);
@@ -69,7 +72,9 @@ class InMemoryP2PService implements P2PService {
   Future<Session> joinSession({
     required String code,
     required String playerName,
+    String? connectionInfo,
   }) async {
+    // connectionInfo is ignored in stub - we use in-memory session lookup
     final session = _sessions.values.firstWhere(
       (s) => s.code == code,
       orElse: () => throw StateError('Session with code $code not found'),

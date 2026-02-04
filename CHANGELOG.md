@@ -2,6 +2,25 @@
 
 All notable changes to YourTurn will be documented in this file.
 
+## [0.0.5] - 2026-02-04
+
+### Fixed
+
+- QR code joining now works properly with WiFi-based connectivity
+- QR codes now include host IP:PORT for direct connection without discovery
+- Extended QR format: `yourturn:CODE:IP:PORT` enables instant joining
+- `joinSession` now accepts optional `connectionInfo` parameter for direct connection
+- WiFi P2P service properly fetches and caches local IP address when hosting
+- All P2P service implementations updated with consistent interface
+
+### Changed
+
+- QR scanner returns structured data (code + connectionInfo) instead of raw string
+- Session controller exposes `hostConnectionInfo` getter for QR code generation
+- Lobby screen passes connection info when joining via QR code scan
+
+---
+
 ## [0.0.4] - 2026-02-03
 
 ### Added
