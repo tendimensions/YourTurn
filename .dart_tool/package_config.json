@@ -158,6 +158,24 @@
       "languageVersion": "2.12"
     },
     {
+      "name": "network_info_plus",
+      "rootUri": "file:///C:/Users/Softupdate/AppData/Local/Pub/Cache/hosted/pub.dev/network_info_plus-5.0.3",
+      "packageUri": "lib/",
+      "languageVersion": "2.18"
+    },
+    {
+      "name": "network_info_plus_platform_interface",
+      "rootUri": "file:///C:/Users/Softupdate/AppData/Local/Pub/Cache/hosted/pub.dev/network_info_plus_platform_interface-2.0.2",
+      "packageUri": "lib/",
+      "languageVersion": "2.18"
+    },
+    {
+      "name": "nm",
+      "rootUri": "file:///C:/Users/Softupdate/AppData/Local/Pub/Cache/hosted/pub.dev/nm-0.5.0",
+      "packageUri": "lib/",
+      "languageVersion": "2.12"
+    },
+    {
       "name": "package_info_plus",
       "rootUri": "file:///C:/Users/Softupdate/AppData/Local/Pub/Cache/hosted/pub.dev/package_info_plus-9.0.0",
       "packageUri": "lib/",

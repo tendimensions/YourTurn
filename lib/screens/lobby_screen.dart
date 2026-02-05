@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:io' show Platform;
 import 'package:flutter/material.dart';
+import 'package:network_info_plus/network_info_plus.dart';
 import 'package:provider/provider.dart';
 import '../controllers/session_controller.dart';
 import '../services/p2p_service.dart';
@@ -28,16 +29,99 @@ class _LobbyScreenState extends State<LobbyScreen> {
   bool _isDiscovering = false;
   SessionController? _sessionController;
 
+  // WiFi network info
+  String? _wifiSSID;
+  String? _wifiIP;
+  final _networkInfo = NetworkInfo();
+
   @override
   void initState() {
     super.initState();
     // Defer discovery start to after first frame when context is available
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _sessionController = context.read<SessionController>();
+      _fetchWifiInfo();
       if (_isNativePlatform) {
         _startDiscovery();
       }
     });
+  }
+
+  Future<void> _fetchWifiInfo() async {
+    try {
+      final ssid = await _networkInfo.getWifiName();
+      final ip = await _networkInfo.getWifiIP();
+      if (mounted) {
+        setState(() {
+          // Remove quotes that some platforms add around SSID
+          _wifiSSID = ssid?.replaceAll('"', '');
+          _wifiIP = ip;
+        });
+      }
+    } catch (e) {
+      print('[Lobby] Failed to get WiFi info: $e');
+    }
+  }
+
+  Widget _buildWifiNetworkInfo() {
+    final hasWifi = _wifiSSID != null && _wifiSSID!.isNotEmpty;
+    final ssidDisplay = hasWifi ? _wifiSSID! : 'Not connected';
+    final ipDisplay = _wifiIP ?? 'Unknown';
+
+    return Container(
+      padding: const EdgeInsets.all(10),
+      decoration: BoxDecoration(
+        color: hasWifi ? Colors.blue.shade50 : Colors.red.shade50,
+        borderRadius: BorderRadius.circular(6),
+        border: Border.all(
+          color: hasWifi ? Colors.blue.shade200 : Colors.red.shade200,
+        ),
+      ),
+      child: Row(
+        children: [
+          Icon(
+            hasWifi ? Icons.wifi : Icons.wifi_off,
+            size: 18,
+            color: hasWifi ? Colors.blue.shade700 : Colors.red.shade700,
+          ),
+          const SizedBox(width: 8),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'Network: $ssidDisplay',
+                  style: TextStyle(
+                    fontWeight: FontWeight.w600,
+                    fontSize: 13,
+                    color: hasWifi ? Colors.blue.shade800 : Colors.red.shade800,
+                  ),
+                ),
+                if (hasWifi)
+                  Text(
+                    'IP: $ipDisplay',
+                    style: TextStyle(
+                      fontSize: 11,
+                      color: Colors.blue.shade600,
+                    ),
+                  ),
+              ],
+            ),
+          ),
+          IconButton(
+            icon: Icon(
+              Icons.refresh,
+              size: 18,
+              color: hasWifi ? Colors.blue.shade700 : Colors.red.shade700,
+            ),
+            onPressed: _fetchWifiInfo,
+            padding: EdgeInsets.zero,
+            constraints: const BoxConstraints(),
+            tooltip: 'Refresh WiFi info',
+          ),
+        ],
+      ),
+    );
   }
 
   @override
@@ -53,12 +137,6 @@ class _LobbyScreenState extends State<LobbyScreen> {
   }
 
   bool get _isNativePlatform => Platform.isIOS || Platform.isAndroid;
-
-  String get _platformName {
-    if (Platform.isIOS) return 'iOS (MultipeerConnectivity)';
-    if (Platform.isAndroid) return 'Android (Nearby Connections)';
-    return 'Simulator';
-  }
 
   void _startDiscovery() {
     final controller = _sessionController;
@@ -196,6 +274,9 @@ class _LobbyScreenState extends State<LobbyScreen> {
                   ),
               ],
             ),
+            const SizedBox(height: 8),
+            // WiFi network info for troubleshooting
+            _buildWifiNetworkInfo(),
             const SizedBox(height: 8),
             Text(
               _discoveredSessions.isEmpty
@@ -463,30 +544,30 @@ class _LobbyScreenState extends State<LobbyScreen> {
 
   Widget _buildInfoNote() {
     final isNative = _isNativePlatform;
-    final color = isNative ? Colors.green : Colors.blue;
 
     return Container(
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
-        color: color.shade50,
+        color: Colors.blue.shade50,
         borderRadius: BorderRadius.circular(8),
       ),
       child: Row(
         children: [
           Icon(
-            isNative ? Icons.wifi_tethering : Icons.info_outline,
-            color: color.shade700,
+            Icons.wifi,
+            color: Colors.blue.shade700,
           ),
           const SizedBox(width: 12),
           Expanded(
             child: Text(
               isNative
-                  ? 'Using $_platformName for peer-to-peer connectivity. '
-                    'Nearby devices will appear automatically.'
+                  ? 'Using WiFi for peer-to-peer connectivity. '
+                    'All devices must be on the same network. '
+                    'Sessions broadcast via UDP on port 41234.'
                   : 'Running in simulator mode. '
                     'Create a session, then use the displayed code to join from this device.',
               style: TextStyle(
-                color: color.shade700,
+                color: Colors.blue.shade700,
                 fontSize: 13,
               ),
             ),

@@ -4,6 +4,13 @@ All notable changes to YourTurn will be documented in this file.
 
 ## [0.0.5] - 2026-02-04
 
+### Added
+
+- WiFi network info display in lobby screen (SSID and IP address for troubleshooting)
+- Added `network_info_plus` package for WiFi network detection
+- iOS entitlements for WiFi info access (`com.apple.developer.networking.wifi-info`)
+- Location permission for WiFi SSID access on iOS 13+
+
 ### Fixed
 
 - QR code joining now works properly with WiFi-based connectivity
@@ -18,6 +25,7 @@ All notable changes to YourTurn will be documented in this file.
 - QR scanner returns structured data (code + connectionInfo) instead of raw string
 - Session controller exposes `hostConnectionInfo` getter for QR code generation
 - Lobby screen passes connection info when joining via QR code scan
+- Simplified connectivity messaging to reflect WiFi-only mode
 
 ---
 

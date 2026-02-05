@@ -50,5 +50,7 @@
 	</array>
 	<key>NSBluetoothAlwaysUsageDescription</key>
 	<string>YourTurn needs Bluetooth to discover nearby players for local multiplayer gaming.</string>
+	<key>NSLocationWhenInUseUsageDescription</key>
+	<string>YourTurn needs location access to identify the WiFi network for connecting with nearby players.</string>
 </dict>
 </plist>
