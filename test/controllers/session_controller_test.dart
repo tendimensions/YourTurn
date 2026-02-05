@@ -426,9 +426,11 @@ void main() {
       await joiner.joinSession(code, 'Bob');
 
       await controller.startGame();
+      await Future.delayed(const Duration(milliseconds: 10)); // Allow stream events to process
       final seqNoBefore = controller.session!.seqNo;
 
       await controller.passTurnToNext();
+      await Future.delayed(const Duration(milliseconds: 10)); // Allow stream events to process
 
       expect(controller.session!.seqNo, greaterThan(seqNoBefore));
 

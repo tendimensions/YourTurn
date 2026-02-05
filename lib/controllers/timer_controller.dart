@@ -72,6 +72,7 @@ class TimerController extends ChangeNotifier {
     _isRunning = false;
     _isFlashing = false;
     _isExpired = false;
+    _remaining = Duration.zero;
     notifyListeners();
   }
 
@@ -95,12 +96,14 @@ class TimerController extends ChangeNotifier {
   }
 
   /// Resume the timer from paused state
-  void resumeTimer() {
+  bool resumeTimer() {
     if (_remaining.inSeconds > 0 && !_isRunning) {
       _isRunning = true;
       _timer = Timer.periodic(const Duration(seconds: 1), _tick);
       notifyListeners();
+      return true;
     }
+    return false;
   }
 
   // === Private Methods ===

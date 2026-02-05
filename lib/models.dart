@@ -150,6 +150,6 @@ class Session {
   /// Generate a short human-friendly code from UUID
   static String shortCodeFromId(String id) {
     final digest = id.replaceAll('-', '');
-    return '${digest.substring(0, 3).toUpperCase()}-${digest.substring(3, 4)}';
+    return '${digest.substring(0, 3).toUpperCase()}-${digest.substring(3, 4).toUpperCase()}';
   }
 }

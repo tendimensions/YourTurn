@@ -149,7 +149,6 @@ class SessionController extends ChangeNotifier {
       phase: GamePhase.active,
       currentIndex: _session!.startPlayerIndex,
       currentTurnStartTime: DateTime.now(),
-      seqNo: _session!.seqNo + 1,
     );
     notifyListeners();
   }
@@ -200,7 +199,6 @@ class SessionController extends ChangeNotifier {
     _session = _session!.copyWith(
       currentIndex: nextIdx,
       currentTurnStartTime: DateTime.now(),
-      seqNo: _session!.seqNo + 1,
     );
 
     await _p2p.passTurn(sessionId: _session!.id, toPlayerId: next.id);
@@ -227,7 +225,6 @@ class SessionController extends ChangeNotifier {
     _session = _session!.copyWith(
       players: list,
       startPlayerIndex: newStartIndex,
-      seqNo: _session!.seqNo + 1,
     );
 
     // Notify P2P service
@@ -246,7 +243,6 @@ class SessionController extends ChangeNotifier {
 
     _session = _session!.copyWith(
       startPlayerIndex: index,
-      seqNo: _session!.seqNo + 1,
     );
 
     _p2p.updateStartPlayer(
@@ -275,7 +271,6 @@ class SessionController extends ChangeNotifier {
     _session = _session!.copyWith(
       timerMinutes: minutes,
       clearTimer: minutes == null,
-      seqNo: _session!.seqNo + 1,
     );
 
     await _p2p.updateTimerSetting(

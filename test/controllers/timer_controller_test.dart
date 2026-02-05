@@ -97,6 +97,7 @@ void main() {
       await tester.pump(const Duration(seconds: 1));
 
       expect(controller.remaining, const Duration(seconds: 59));
+      controller.stopTimer();
     });
 
     testWidgets('updates display time as timer counts down', (tester) async {
@@ -105,6 +106,7 @@ void main() {
       await tester.pump(const Duration(seconds: 1));
 
       expect(controller.displayTime, '00:59');
+      controller.stopTimer();
     });
 
     testWidgets('updates progress as timer counts down', (tester) async {
@@ -115,6 +117,7 @@ void main() {
 
       expect(controller.progress, lessThan(initialProgress));
       expect(controller.progress, closeTo(0.5, 0.02));
+      controller.stopTimer();
     });
   });
 
@@ -203,14 +206,16 @@ void main() {
 
       expect(controller.isRunning, isTrue);
       expect(controller.remaining, const Duration(seconds: 50));
+      controller.stopTimer();
     });
 
     test('does not resume if remaining time is zero', () {
       controller.startTimer(1);
       controller.stopTimer();
 
-      controller.resumeTimer();
+      final resumed = controller.resumeTimer();
 
+      expect(resumed, isFalse);
       expect(controller.isRunning, isFalse);
     });
 
@@ -233,6 +238,7 @@ void main() {
       await tester.pump(const Duration(seconds: 50));
 
       expect(controller.isFlashing, isTrue);
+      controller.stopTimer();
     });
 
     testWidgets('calls onWarningStart callback at threshold', (tester) async {
@@ -243,6 +249,7 @@ void main() {
       await tester.pump(const Duration(seconds: 50));
 
       expect(warningCalled, isTrue);
+      controller.stopTimer();
     });
 
     testWidgets('only calls onWarningStart once', (tester) async {
@@ -255,6 +262,7 @@ void main() {
       await tester.pump(const Duration(seconds: 1));
 
       expect(callCount, 1);
+      controller.stopTimer();
     });
   });
 
@@ -319,6 +327,7 @@ void main() {
       await tester.pump(const Duration(minutes: 1));
 
       expect(controller.progress, closeTo(0.5, 0.01));
+      controller.stopTimer();
     });
   });
 
@@ -334,6 +343,7 @@ void main() {
       await tester.pump(const Duration(seconds: 30));
 
       expect(controller.displayTime, '00:30');
+      controller.stopTimer();
     });
   });
 
@@ -393,6 +403,7 @@ void main() {
       await tester.pump(const Duration(seconds: 3));
 
       expect(notifyCount, 3);
+      controller.stopTimer();
     });
   });
 }

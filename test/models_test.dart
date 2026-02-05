@@ -367,8 +367,8 @@ void main() {
       });
 
       test('produces different output for different inputs', () {
-        final code1 = Session.shortCodeFromId('uuid-1111-aaaa-bbbb');
-        final code2 = Session.shortCodeFromId('uuid-2222-cccc-dddd');
+        final code1 = Session.shortCodeFromId('aaaa-1111-aaaa-bbbb');
+        final code2 = Session.shortCodeFromId('bbbb-2222-cccc-dddd');
 
         expect(code1, isNot(equals(code2)));
       });
